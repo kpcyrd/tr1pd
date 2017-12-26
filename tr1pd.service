@@ -1,0 +1,8 @@
+[Unit]
+Description=tr1pd
+
+[Service]
+ExecStart=/root/tr1pd/audit.sh
+
+[Install]
+WantedBy=multi-user.target
