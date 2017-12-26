@@ -6,13 +6,18 @@ use clap::{App, SubCommand, Arg};
 
 use tr1pd::storage::BlockStorage;
 use tr1pd::blocks::BlockPointer;
+use tr1pd::crypto;
 
 use std::env;
+use std::fs::File;
+use std::io::prelude::*;
 
 fn main() {
     env_logger::init().unwrap();
 
     let matches = App::new("tr1pctl")
+        .subcommand(SubCommand::with_name("init")
+        )
         .subcommand(SubCommand::with_name("get")
             .arg(Arg::with_name("all")
                 .short("a")
@@ -40,6 +45,20 @@ fn main() {
     let mut path = env::home_dir().unwrap();
     path.push(".tr1pd/");
     let storage = BlockStorage::new(path);
+
+    if let Some(_matches) = matches.subcommand_matches("init") {
+        let (pk, sk) = crypto::gen_keypair(); // TODO: load encryption keys
+
+        {
+            let mut file = File::create("/etc/tr1pd/lt.pk").expect("create lt.pk");
+            file.write_all(&pk.0).unwrap();
+        };
+
+        {
+            let mut file = File::create("/etc/tr1pd/lt.sk").expect("create lt.sk");
+            file.write_all(&sk.0).unwrap();
+        };
+    }
 
     if let Some(matches) = matches.subcommand_matches("get") {
         let all = matches.occurrences_of("all") > 0;
