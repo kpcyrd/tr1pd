@@ -1,5 +1,6 @@
 use sha3::{Digest, Sha3_256};
 
+use crypto;
 use crypto::prelude::*;
 use crypto::ring::SignRing;
 use wire::len_to_u16_vec;
@@ -24,6 +25,17 @@ impl BlockPointer {
             Some(BlockPointer(pointer))
         } else {
             None
+        }
+    }
+
+    pub fn verify(&self, buf: &[u8]) -> Result<(), ()> {
+        let result = Sha3_256::digest(&buf);
+        let calculated = BlockPointer::from_slice(result.as_slice()).unwrap();
+
+        if calculated == *self {
+            Ok(())
+        } else {
+            Err(())
         }
     }
 
@@ -83,12 +95,16 @@ pub struct Block {
 impl Block {
     fn sign(inner: BlockType, keyring: &SignRing) -> Result<Block, ()> {
         let buf = inner.encode();
-        let signature = keyring.sign_longterm(&buf.to_vec());
+        let signature = keyring.sign_longterm(&buf);
 
         Ok(Block {
             inner,
             signature,
         })
+    }
+
+    pub fn verify_longterm(&self, pubkey: &PublicKey) -> Result<(), ()> {
+        crypto::verify(&self.signature, &self.inner.encode(), pubkey)
     }
 
     #[inline]

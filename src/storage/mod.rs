@@ -66,11 +66,7 @@ impl BlockStorage {
     }
 
     pub fn get(&self, pointer: &BlockPointer) -> Result<Block> {
-        let path = self.pointer_to_path(&pointer);
-        let mut file = File::open(path)?;
-
-        let mut buf = Vec::new();
-        file.read_to_end(&mut buf)?;
+        let buf = self.get_raw(pointer)?;
 
         if let IResult::Done(_, block) = wire::block(&buf) {
             let block = block.0;
@@ -81,6 +77,19 @@ impl BlockStorage {
         } else {
             panic!("Error::CorruptedEntry")
         }
+    }
+
+    pub fn get_raw(&self, pointer: &BlockPointer) -> Result<Vec<u8>> {
+        let path = self.pointer_to_path(&pointer);
+        let mut file = File::open(path)?;
+
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf)?;
+
+        // verify block
+        pointer.verify(&buf).expect("fsck block");
+
+        Ok(buf)
     }
 
     pub fn get_head(&self) -> Result<BlockPointer> {

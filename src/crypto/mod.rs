@@ -93,6 +93,10 @@ impl<T: Signable> Signed<T> {
     pub fn signature(&self) -> &Signature {
         &self.1
     }
+
+    pub fn verify_session(&self, pubkey: &PublicKey) -> Result<(), ()> {
+        verify(&self.1, &self.0.encode(), pubkey)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
