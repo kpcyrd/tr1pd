@@ -2,23 +2,30 @@ extern crate tr1pd;
 extern crate clap;
 extern crate env_logger;
 
-use clap::{App, SubCommand, Arg};
+use clap::{App, SubCommand, Arg, AppSettings};
 
 use tr1pd::storage::BlockStorage;
 use tr1pd::blocks::BlockPointer;
 use tr1pd::crypto;
 
 use std::env;
-use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::prelude::*;
 
 fn main() {
     env_logger::init().unwrap();
 
     let matches = App::new("tr1pctl")
+        .settings(&[AppSettings::SubcommandRequiredElseHelp, AppSettings::ColoredHelp])
         .subcommand(SubCommand::with_name("init")
+            .about("Generate the long-term keypair")
+            .arg(Arg::with_name("force")
+                .help("Overwrite existing keypair")
+                .long("force")
+            )
         )
         .subcommand(SubCommand::with_name("get")
+            .about("Read block")
             .arg(Arg::with_name("all")
                 .short("a")
                 .long("all")
@@ -32,8 +39,10 @@ fn main() {
             )
         )
         .subcommand(SubCommand::with_name("head")
+            .about("Show the current head of the chain")
         )
         .subcommand(SubCommand::with_name("ls")
+            .about("List blocks")
             .arg(Arg::with_name("since")
                 .short("s")
                 .long("since")
@@ -46,16 +55,26 @@ fn main() {
     path.push(".tr1pd/");
     let storage = BlockStorage::new(path);
 
-    if let Some(_matches) = matches.subcommand_matches("init") {
-        let (pk, sk) = crypto::gen_keypair(); // TODO: load encryption keys
+    if let Some(matches) = matches.subcommand_matches("init") {
+        let force = matches.occurrences_of("force") > 0;
+
+        let (pk, sk) = crypto::gen_keypair();
 
         {
-            let mut file = File::create("/etc/tr1pd/lt.pk").expect("create lt.pk");
+            let mut file = OpenOptions::new()
+                            .write(true)
+                            .create(true)
+                            .create_new(!force)
+                            .open("/etc/tr1pd/lt.pk").expect("create lt.pk");
             file.write_all(&pk.0).unwrap();
         };
 
         {
-            let mut file = File::create("/etc/tr1pd/lt.sk").expect("create lt.sk");
+            let mut file = OpenOptions::new()
+                            .write(true)
+                            .create(true)
+                            .create_new(!force)
+                            .open("/etc/tr1pd/lt.sk").expect("create lt.sk");
             file.write_all(&sk.0).unwrap();
         };
     }
