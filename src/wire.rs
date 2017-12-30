@@ -15,7 +15,7 @@ pub fn len_to_u16_vec(i: usize) -> [u8; 2] {
         bytes
 }
 
-named!(pointer<&[u8], BlockPointer>, map_opt!(take!(32), BlockPointer::from_slice));
+named!(pointer<&[u8], BlockPointer>, map_res!(take!(32), BlockPointer::from_slice));
 named!(pubkey<&[u8], PublicKey>, map_opt!(take!(32), PublicKey::from_slice));
 named!(signature<&[u8], Signature>, map_opt!(take!(64), Signature::from_slice));
 

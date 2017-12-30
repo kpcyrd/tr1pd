@@ -6,6 +6,17 @@ pub mod ring;
 
 pub use self::ring::{VerifyRing, SignRing};
 
+pub mod errors {
+    error_chain! {
+        errors {
+            InvalidSignature
+            CorruptedKey
+        }
+    }
+}
+use self::errors::{Result, ErrorKind};
+
+
 pub mod prelude {
     pub use super::{Unverified, Signable, Signed};
     pub use super::{PublicKey, SecretKey, Signature};
@@ -20,25 +31,25 @@ pub fn sign(m: &[u8], sk: &SecretKey) -> Signature {
     sign::sign_detached(m, sk)
 }
 
-pub fn verify(sig: &Signature, m: &[u8], pk: &PublicKey) -> Result<(), ()> {
+pub fn verify(sig: &Signature, m: &[u8], pk: &PublicKey) -> Result<()> {
     if sign::verify_detached(sig, m, pk) {
         Ok(())
     } else {
-        Err(())
+        Err(ErrorKind::InvalidSignature.into())
     }
 }
 
-pub fn to_pubkey(pk: &[u8]) -> Result<PublicKey, ()> {
+pub fn to_pubkey(pk: &[u8]) -> Result<PublicKey> {
     match PublicKey::from_slice(pk) {
         Some(pk) => Ok(pk),
-        None => Err(()),
+        None => Err(ErrorKind::CorruptedKey.into()),
     }
 }
 
-pub fn to_privkey(sk: &[u8]) -> Result<SecretKey, ()> {
+pub fn to_privkey(sk: &[u8]) -> Result<SecretKey> {
     match SecretKey::from_slice(sk) {
         Some(sk) => Ok(sk),
-        None => Err(()),
+        None => Err(ErrorKind::CorruptedKey.into()),
     }
 }
 
@@ -94,7 +105,7 @@ impl<T: Signable> Signed<T> {
         &self.1
     }
 
-    pub fn verify_session(&self, pubkey: &PublicKey) -> Result<(), ()> {
+    pub fn verify_session(&self, pubkey: &PublicKey) -> Result<()> {
         verify(&self.1, &self.0.encode(), pubkey)
     }
 }

@@ -6,14 +6,8 @@ use crypto::SignRing;
 pub mod errors {
     error_chain! {
         links {
+            Blocks(::blocks::errors::Error, ::blocks::errors::ErrorKind);
             Storage(::storage::errors::Error, ::storage::errors::ErrorKind);
-        }
-    }
-
-    impl From<()> for Error {
-        fn from(_x: ()) -> Error {
-            // dummy to get the prototype to work
-            unimplemented!()
         }
     }
 }

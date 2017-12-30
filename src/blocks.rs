@@ -8,6 +8,24 @@ use wire::len_to_u16_vec;
 use std::fmt;
 
 
+pub mod errors {
+    error_chain! {
+        errors {
+            CorruptedBlock
+            InvalidBlockPointer
+            InvalidBlockIdentifier(b: u8) {
+                description("invalid block type identifier")
+                display("invalid block type identifier: {:x}", b)
+            }
+        }
+        links {
+            Crypto(::crypto::errors::Error, ::crypto::errors::ErrorKind);
+        }
+    }
+}
+use self::errors::{Result, ErrorKind};
+
+
 pub mod prelude {
     pub use super::{Block, BlockType, BlockIdentifier, BlockPointer};
     pub use super::{InitBlock, RekeyBlock, AlertBlock, InfoBlock};
@@ -18,24 +36,24 @@ pub mod prelude {
 pub struct BlockPointer(pub [u8; 32]);
 
 impl BlockPointer {
-    pub fn from_slice(bytes: &[u8]) -> Option<BlockPointer> {
+    pub fn from_slice(bytes: &[u8]) -> Result<BlockPointer> {
         if bytes.len() == 32 {
             let mut pointer = [0; 32];
             pointer.copy_from_slice(bytes);
-            Some(BlockPointer(pointer))
+            Ok(BlockPointer(pointer))
         } else {
-            None
+            Err(ErrorKind::InvalidBlockPointer.into())
         }
     }
 
-    pub fn verify(&self, buf: &[u8]) -> Result<(), ()> {
+    pub fn verify(&self, buf: &[u8]) -> Result<()> {
         let result = Sha3_256::digest(&buf);
         let calculated = BlockPointer::from_slice(result.as_slice()).unwrap();
 
         if calculated == *self {
             Ok(())
         } else {
-            Err(())
+            Err(ErrorKind::CorruptedBlock.into())
         }
     }
 
@@ -46,8 +64,10 @@ impl BlockPointer {
         (prefix.into(), hash.into())
     }
 
-    pub fn from_hex(mut hex: &str) -> Result<BlockPointer, ()> {
-        let result: Result<Vec<u8>, _> = (0..32)
+    pub fn from_hex(mut hex: &str) -> Result<BlockPointer> {
+        use std::result;
+
+        let result: result::Result<Vec<u8>, _> = (0..32)
             .map(|_| {
                 let (chunk, remain) = hex.split_at(2);
                 hex = remain;
@@ -59,11 +79,8 @@ impl BlockPointer {
             .collect();
 
         match result {
-            Ok(result) => match BlockPointer::from_slice(&result) {
-                Some(pointer) => Ok(pointer),
-                None => Err(()),
-            },
-            Err(_) => Err(()),
+            Ok(result) => BlockPointer::from_slice(&result),
+            Err(_) => Err(ErrorKind::InvalidBlockPointer.into()),
         }
     }
 }
@@ -93,7 +110,7 @@ pub struct Block {
 }
 
 impl Block {
-    fn sign(inner: BlockType, keyring: &SignRing) -> Result<Block, ()> {
+    fn sign(inner: BlockType, keyring: &SignRing) -> Result<Block> {
         let buf = inner.encode();
         let signature = keyring.sign_longterm(&buf);
 
@@ -103,8 +120,9 @@ impl Block {
         })
     }
 
-    pub fn verify_longterm(&self, pubkey: &PublicKey) -> Result<(), ()> {
-        crypto::verify(&self.signature, &self.inner.encode(), pubkey)
+    pub fn verify_longterm(&self, pubkey: &PublicKey) -> Result<()> {
+        crypto::verify(&self.signature, &self.inner.encode(), pubkey)?;
+        Ok(())
     }
 
     #[inline]
@@ -129,22 +147,22 @@ impl Block {
         })
     }
 
-    pub fn init(prev: BlockPointer, mut keyring: &mut SignRing) -> Result<Block, ()> {
+    pub fn init(prev: BlockPointer, mut keyring: &mut SignRing) -> Result<Block> {
         let inner = InitBlock::new(prev, &mut keyring);
         Block::sign(BlockType::Init(inner), &keyring)
     }
 
-    pub fn rekey(prev: BlockPointer, keyring: &mut SignRing) -> Result<Block, ()> {
+    pub fn rekey(prev: BlockPointer, keyring: &mut SignRing) -> Result<Block> {
         let inner = keyring.rekey(prev);
         Block::sign(BlockType::Rekey(inner), &keyring)
     }
 
-    pub fn alert(prev: BlockPointer, keyring: &mut SignRing, bytes: Vec<u8>) -> Result<Block, ()> {
+    pub fn alert(prev: BlockPointer, keyring: &mut SignRing, bytes: Vec<u8>) -> Result<Block> {
         let inner = keyring.alert(prev, bytes);
         Block::sign(BlockType::Alert(inner), &keyring)
     }
 
-    pub fn info(prev: BlockPointer, mut keyring: &mut SignRing, bytes: Vec<u8>) -> Result<Block, ()> {
+    pub fn info(prev: BlockPointer, mut keyring: &mut SignRing, bytes: Vec<u8>) -> Result<Block> {
         let inner = InfoBlock::new(prev, &mut keyring, bytes);
         Block::sign(BlockType::Info(inner), &keyring)
     }
@@ -188,13 +206,13 @@ pub enum BlockIdentifier {
 }
 
 impl BlockIdentifier {
-    pub fn to_block_identifier(x: u8) -> Result<BlockIdentifier, ()> {
+    pub fn to_block_identifier(x: u8) -> Result<BlockIdentifier> {
         match x {
             0x00 => Ok(BlockIdentifier::Init),
             0x01 => Ok(BlockIdentifier::Rekey),
             0x02 => Ok(BlockIdentifier::Alert),
             0x03 => Ok(BlockIdentifier::Info),
-            _ => Err(()),
+            _ => Err(ErrorKind::InvalidBlockIdentifier(x).into()),
         }
     }
 

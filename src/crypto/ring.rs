@@ -5,6 +5,19 @@ use crypto::prelude::*;
 use blocks::prelude::*;
 
 
+pub mod errors {
+    error_chain! {
+        errors {
+            ProtocolViolation
+        }
+        links {
+            Crypto(::crypto::errors::Error, ::crypto::errors::ErrorKind);
+        }
+    }
+}
+use self::errors::{Result, ErrorKind};
+
+
 pub struct VerifyRing {
     longterm_key: PublicKey,
     session_key: Option<PublicKey>,
@@ -18,24 +31,30 @@ impl VerifyRing {
         }
     }
 
-    pub fn verify_longterm(&self, m: &[u8], sig: &Signature) -> Result<(), ()> {
-        crypto::verify(sig, m, &self.longterm_key)
+    pub fn verify_longterm(&self, m: &[u8], sig: &Signature) -> Result<()> {
+        crypto::verify(sig, m, &self.longterm_key)?;
+        Ok(())
     }
 
-    pub fn verify_session(&self, m: &[u8], sig: &Signature) -> Result<(), ()> {
+    pub fn verify_session(&self, m: &[u8], sig: &Signature) -> Result<()> {
         match self.session_key {
-            Some(ref pk) => crypto::verify(sig, &m, pk),
-            None => Err(()),
+            Some(ref pk) => {
+                crypto::verify(sig, &m, pk)?;
+                Ok(())
+            },
+            None => {
+                Err(ErrorKind::ProtocolViolation.into())
+            },
         }
     }
 
     // TODO: this might be obsolete
-    pub fn init(&mut self, pubkey: PublicKey) -> Result<(), ()> {
+    pub fn init(&mut self, pubkey: PublicKey) -> Result<()> {
         if self.session_key.is_none() {
             self.session_key = Some(pubkey);
             Ok(())
         } else {
-            Err(())
+            Err(ErrorKind::ProtocolViolation.into())
         }
     }
 
@@ -43,7 +62,7 @@ impl VerifyRing {
         self.session_key = Some(pubkey);
     }
 
-    fn internal_rekey(&mut self, pubkey: PublicKey, buf: &[u8], sig: &Signature) -> Result<(), ()> {
+    fn internal_rekey(&mut self, pubkey: PublicKey, buf: &[u8], sig: &Signature) -> Result<()> {
         match self.verify_session(&buf, sig) {
             Ok(_) => {
                 self.session_key = Some(pubkey);
@@ -53,19 +72,19 @@ impl VerifyRing {
         }
     }
 
-    pub fn rekey(&mut self, block: &Signed<RekeyBlock>) -> Result<(), ()> {
+    pub fn rekey(&mut self, block: &Signed<RekeyBlock>) -> Result<()> {
         self.internal_rekey(block.pubkey().clone(),
                             &block.encode_inner(),
                             block.signature())
     }
 
-    pub fn alert_rekey(&mut self, block: &Signed<AlertBlock>) -> Result<(), ()> {
+    pub fn alert_rekey(&mut self, block: &Signed<AlertBlock>) -> Result<()> {
         self.internal_rekey(block.pubkey().clone(),
                             &block.encode_inner(),
                             block.signature())
     }
 
-    pub fn verify_block_session<T: Signable>(&mut self, block: &Signed<T>) -> Result<(), ()> {
+    pub fn verify_block_session<T: Signable>(&mut self, block: &Signed<T>) -> Result<()> {
         self.verify_session(&block.encode_inner(),
                             block.signature())
     }
@@ -157,7 +176,7 @@ impl SignRing {
         utils::memzero(x)
     }
 
-    fn finalize_rekey(&mut self, buf: &[u8]) -> Result<Signature, ()> {
+    fn finalize_rekey(&mut self, buf: &[u8]) -> Result<Signature> {
         let signature = self.sign_session(&buf);
 
         match self.delayed_keypair.take() {
@@ -172,7 +191,7 @@ impl SignRing {
 
                 Ok(signature)
             },
-            None => Err(()),
+            None => Err(ErrorKind::ProtocolViolation.into()),
         }
     }
 }
