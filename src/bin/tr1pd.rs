@@ -1,16 +1,16 @@
 extern crate tr1pd;
 extern crate clap;
 extern crate env_logger;
+extern crate human_size;
 
-// use clap::{App, SubCommand, Arg};
-use clap::{App};
+use clap::{App, Arg, AppSettings};
+use human_size::Size;
 
 use tr1pd::storage::BlockStorage;
 use tr1pd::engine::Engine;
 use tr1pd::crypto::{SignRing, PublicKey, SecretKey};
 
 use std::env;
-// use std::path::Path;
 use std::fs::File;
 use std::io::stdin;
 use std::io::BufReader;
@@ -37,8 +37,14 @@ fn load_keypair(pk: &str, sk: &str) -> Option<(PublicKey, SecretKey)> {
 fn main() {
     env_logger::init().unwrap();
 
-    let _matches = App::new("tr1pd")
-        // .subcommand(SubCommand::with_name("foo"))
+    let matches = App::new("tr1pd")
+        .setting(AppSettings::ColoredHelp)
+        .arg(Arg::with_name("size")
+            .help("Use buffer size instead of lines")
+            .short("s")
+            .long("size")
+            .takes_value(true)
+        )
         .get_matches();
 
     let mut path = env::home_dir().unwrap();
@@ -53,15 +59,37 @@ fn main() {
 
     let mut engine = Engine::start(storage, ring).unwrap();
 
-    let stdin = BufReader::new(stdin());
+    let mut source = stdin();
 
-    for line in stdin.lines() {
-        // discard invalid lines
-        if let Ok(line) = line {
-            // println!("{:?}", line);
-            // storage.push(line).unwrap();
-            engine.info(line.as_bytes().to_vec()).unwrap();
-            engine.rekey().unwrap();
-        }
-    }
+    let mut cb = |buf: Vec<u8>| {
+        engine.info(buf).unwrap();
+        engine.rekey().unwrap();
+    };
+
+    match matches.value_of("size") {
+        Some(size) => {
+            // TODO: this is a very strict parser, eg "512k" is invalid "512 KiB" isn't
+            let size = match size.parse::<Size>() {
+                Ok(size) => size.into_bytes() as usize,
+                Err(_) => size.parse().unwrap(),
+            };
+            let mut buf = vec![0; size];
+            loop {
+                let i = source.read(&mut buf).unwrap();
+                if i == 0 {
+                    break;
+                }
+                cb(buf[..i].to_vec());
+            }
+        },
+        None => {
+            let stdin = BufReader::new(source);
+            for line in stdin.lines() {
+                // discard invalid lines
+                if let Ok(line) = line {
+                    cb(line.as_bytes().to_vec());
+                }
+            }
+        },
+    };
 }
