@@ -7,8 +7,13 @@ extern crate sha3;
 
 pub mod errors {
     error_chain! {
+        links {
+            Blocks(::blocks::errors::Error, ::blocks::errors::ErrorKind);
+            Storage(::storage::errors::Error, ::storage::errors::ErrorKind);
+        }
     }
 }
+use self::errors::Result;
 
 pub mod blocks;
 pub mod crypto;
@@ -19,9 +24,9 @@ pub mod wire;
 
 
 use blocks::BlockPointer;
-pub fn backtrace(storage: &storage::BlockStorage, since: Option<&str>) -> Result<Vec<BlockPointer>, errors::Error> {
+pub fn backtrace(storage: &storage::BlockStorage, since: Option<&str>, to: Option<&str>) -> Result<Vec<BlockPointer>> {
     let since = match since {
-        Some(since) => BlockPointer::from_hex(since).unwrap(),
+        Some(since) => BlockPointer::from_hex(since)?,
         None => BlockPointer::from_slice(&[
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
@@ -30,11 +35,15 @@ pub fn backtrace(storage: &storage::BlockStorage, since: Option<&str>) -> Result
         ]).unwrap(),
     };
 
-    let mut backtrace = vec![];
+    let mut pointer = match to {
+        Some(to) => BlockPointer::from_hex(to)?,
+        None => storage.get_head()?,
+    };
 
-    let mut pointer = storage.get_head().unwrap();
+    let mut backtrace = vec![pointer.clone()];
+
     loop {
-        let block = storage.get(&pointer).unwrap();
+        let block = storage.get(&pointer)?;
         pointer = block.prev().clone();
 
         if pointer == BlockPointer::from_slice(&[
