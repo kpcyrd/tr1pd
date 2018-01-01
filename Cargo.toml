@@ -1,8 +1,10 @@
 [package]
 name = "tr1pd"
 version = "0.1.0"
+description = "work in progress"
 authors = ["kpcyrd <git@rxv.cc>"]
 license = "AGPL-3.0"
+repository = "https://github.com/kpcyrd/tr1pd"
 
 [[bin]]
 name = "tr1pd"
