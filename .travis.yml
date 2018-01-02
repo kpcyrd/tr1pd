@@ -1,9 +1,12 @@
 language: rust
 
-rust:
-- stable
-- nightly
-
 matrix:
-  allow_failures:
-    - rust: nightly
+  include:
+  - os: linux
+    rust: stable
+    env: TARGET=x86_64-unknown-linux-gnu
+
+install:
+- sudo ci/travis_setup.sh
+script:
+- ci/test.sh
