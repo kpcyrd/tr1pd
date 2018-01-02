@@ -1,0 +1,7 @@
+target
+fuzz
+Dockerfile
+.dockerignore
+.git
+.gitignore
+*.sw[op]
