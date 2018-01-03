@@ -1,14 +1,16 @@
+#![warn(unused_extern_crates)]
+
 extern crate tr1pd;
-extern crate clap;
 extern crate env_logger;
 extern crate human_size;
 
-use clap::{App, Arg, AppSettings};
 use human_size::Size;
 
 use tr1pd::storage::BlockStorage;
 use tr1pd::engine::Engine;
 use tr1pd::crypto::{SignRing, PublicKey, SecretKey};
+use tr1pd::cli;
+use tr1pd::cli::tr1pd::build_cli;
 
 use std::env;
 use std::fs::File;
@@ -37,15 +39,13 @@ fn load_keypair(pk: &str, sk: &str) -> Option<(PublicKey, SecretKey)> {
 fn main() {
     env_logger::init().unwrap();
 
-    let matches = App::new("tr1pd")
-        .setting(AppSettings::ColoredHelp)
-        .arg(Arg::with_name("size")
-            .help("Use buffer size instead of lines")
-            .short("s")
-            .long("size")
-            .takes_value(true)
-        )
+    let matches = build_cli()
         .get_matches();
+
+    if matches.is_present("bash-completion") {
+        cli::gen_completions(build_cli(), "tr1pd");
+        return;
+    }
 
     let mut path = env::home_dir().unwrap();
     path.push(".tr1pd/");

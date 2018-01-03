@@ -1,5 +1,6 @@
 extern crate sodiumoxide;
 extern crate sha3;
+extern crate clap;
 // #[macro_use] extern crate log;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate error_chain;
@@ -16,6 +17,7 @@ pub mod errors {
 use self::errors::Result;
 
 pub mod blocks;
+pub mod cli;
 pub mod crypto;
 pub mod engine;
 pub mod storage;

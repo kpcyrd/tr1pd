@@ -1,16 +1,18 @@
+#![warn(unused_extern_crates)]
+
 extern crate tr1pd;
-extern crate clap;
 extern crate env_logger;
 extern crate nom;
 extern crate colored;
 
-use clap::{App, SubCommand, Arg, AppSettings};
 use colored::Colorize;
 
 use tr1pd::storage::BlockStorage;
 use tr1pd::blocks::BlockPointer;
 use tr1pd::crypto;
 use tr1pd::crypto::PublicKey;
+use tr1pd::cli;
+use tr1pd::cli::tr1pctl::build_cli;
 
 use std::io;
 use std::env;
@@ -30,78 +32,16 @@ fn load_pubkey(pk: &str) -> Result<PublicKey, ()> {
 fn main() {
     env_logger::init().unwrap();
 
-    let matches = App::new("tr1pctl")
-        .settings(&[AppSettings::SubcommandRequiredElseHelp, AppSettings::ColoredHelp])
-        .subcommand(SubCommand::with_name("init")
-            .setting(AppSettings::ColoredHelp)
-            .about("Generate the long-term keypair")
-            .arg(Arg::with_name("force")
-                .help("Overwrite existing keypair")
-                .long("force")
-            )
-        )
-        .subcommand(SubCommand::with_name("get")
-            .setting(AppSettings::ColoredHelp)
-            .about("Read block")
-            .arg(Arg::with_name("all")
-                .short("a")
-                .long("all")
-            )
-            .arg(Arg::with_name("parent")
-                .short("p")
-                .long("parent")
-            )
-            .arg(Arg::with_name("block")
-                .required(true)
-            )
-        )
-        .subcommand(SubCommand::with_name("head")
-            .setting(AppSettings::ColoredHelp)
-            .about("Show the current head of the chain")
-        )
-        .subcommand(SubCommand::with_name("ls")
-            .setting(AppSettings::ColoredHelp)
-            .about("List blocks")
-            .arg(Arg::with_name("since")
-                .short("s")
-                .long("since")
-                .takes_value(true)
-            )
-        )
-        .subcommand(SubCommand::with_name("fsck")
-            .setting(AppSettings::ColoredHelp)
-            .about("Verify blockchain")
-            .arg(Arg::with_name("since")
-                .help("Start verifying from this trusted block")
-                .short("s")
-                .long("since")
-                .takes_value(true)
-            )
-            .arg(Arg::with_name("to")
-                .help("Verify to this untrusted block")
-                .short("t")
-                .long("to")
-                .takes_value(true)
-            )
-            .arg(Arg::with_name("verbose")
-                .help("Verbose output")
-                .short("v")
-            )
-            .arg(Arg::with_name("quiet")
-                .help("Quiet output")
-                .short("q")
-            )
-            .arg(Arg::with_name("paranoid")
-                .help("Consider 2nd init block within range fatal")
-                .short("p")
-                .long("paranoid")
-            )
-        )
+    let matches = build_cli()
         .get_matches();
 
     let mut path = env::home_dir().unwrap();
     path.push(".tr1pd/");
     let storage = BlockStorage::new(path);
+
+    if matches.is_present("bash-completion") {
+        cli::gen_completions(build_cli(), "tr1pctl");
+    }
 
     if let Some(matches) = matches.subcommand_matches("init") {
         let force = matches.occurrences_of("force") > 0;
