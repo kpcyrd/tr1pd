@@ -4,7 +4,9 @@ extern crate tr1pd;
 extern crate env_logger;
 extern crate nom;
 extern crate colored;
+extern crate human_size;
 
+use human_size::Size;
 use colored::Colorize;
 
 use tr1pd::storage::BlockStorage;
@@ -13,13 +15,18 @@ use tr1pd::crypto;
 use tr1pd::crypto::PublicKey;
 use tr1pd::cli;
 use tr1pd::cli::tr1pctl::build_cli;
+use tr1pd::recipe::BlockRecipe;
+use tr1pd::rpc::{Client, CtlRequest, CtlResponse};
 
 use std::io;
+use std::io::stdin;
+use std::io::BufReader;
+use std::io::prelude::*;
 use std::env;
 use std::str;
+use std::process;
 use std::fs::File;
 use std::fs::OpenOptions;
-use std::io::prelude::*;
 
 fn load_pubkey(pk: &str) -> Result<PublicKey, ()> {
     let mut file = File::open(pk).expect("create lt.pk");
@@ -38,10 +45,8 @@ fn main() {
     let mut path = env::home_dir().unwrap();
     path.push(".tr1pd/");
     let storage = BlockStorage::new(path);
+    let client = Client::new("tr1pd.sock");
 
-    if matches.is_present("bash-completion") {
-        cli::gen_completions(build_cli(), "tr1pctl");
-    }
 
     if let Some(matches) = matches.subcommand_matches("init") {
         let force = matches.occurrences_of("force") > 0;
@@ -109,6 +114,51 @@ fn main() {
                 println!("{}", str::from_utf8(bytes).unwrap());
             }
         }
+    }
+
+    if let Some(matches) = matches.subcommand_matches("write") {
+
+        let mut source = stdin();
+
+        let mut cb = |buf: Vec<u8>| {
+            let block = BlockRecipe::info(buf);
+
+            match client.send(&CtlRequest::Write(block)) {
+                Ok(CtlResponse::Ack(pointer)) => {
+                    // if not quiet
+                    println!("{:x}", pointer);
+                },
+                Ok(_) => (),
+                Err(err) => eprintln!("error: {:?}", err),
+            }
+        };
+
+        match matches.value_of("size") {
+            Some(size) => {
+                // TODO: this is a very strict parser, eg "512k" is invalid "512 KiB" isn't
+                let size = match size.parse::<Size>() {
+                    Ok(size) => size.into_bytes() as usize,
+                    Err(_) => size.parse().unwrap(),
+                };
+                let mut buf = vec![0; size];
+                loop {
+                    let i = source.read(&mut buf).unwrap();
+                    if i == 0 {
+                        break;
+                    }
+                    cb(buf[..i].to_vec());
+                }
+            },
+            None => {
+                let stdin = BufReader::new(source);
+                for line in stdin.lines() {
+                    // discard invalid lines
+                    if let Ok(line) = line {
+                        cb(line.as_bytes().to_vec());
+                    }
+                }
+            },
+        };
     }
 
     if let Some(matches) = matches.subcommand_matches("fsck") {
@@ -185,5 +235,23 @@ fn main() {
             println!("{}", "ok".green());
             first_block = false;
         }
+    }
+
+    if let Some(matches) = matches.subcommand_matches("ping") {
+        let quiet = matches.occurrences_of("quiet") > 0;
+
+        let req = CtlRequest::Ping;
+        match client.send(&req) {
+            Ok(_) if quiet => (),
+            Ok(_) => println!("pong"),
+            Err(err) => {
+                eprintln!("{:?}", err);
+                process::exit(1);
+            },
+        }
+    }
+
+    if matches.is_present("bash-completion") {
+        cli::gen_completions(build_cli(), "tr1pctl");
     }
 }
