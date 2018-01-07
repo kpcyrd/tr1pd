@@ -5,6 +5,7 @@ description = "work in progress"
 authors = ["kpcyrd <git@rxv.cc>"]
 license = "AGPL-3.0"
 repository = "https://github.com/kpcyrd/tr1pd"
+categories = ["command-line-utilities"]
 
 [[bin]]
 name = "tr1pd"
@@ -14,6 +15,9 @@ doc = false
 [[bin]]
 name = "tr1pctl"
 path = "src/bin/tr1pctl.rs"
+
+[badges]
+travis-ci = { repository = "kpcyrd/tr1pd" }
 
 [dependencies]
 nom = "3.2"
