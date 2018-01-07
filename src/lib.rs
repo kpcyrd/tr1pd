@@ -36,6 +36,9 @@ pub mod storage;
 #[allow(unused_variables)]
 pub mod wire;
 
+#[cfg(test)]
+mod tests;
+
 
 use blocks::BlockPointer;
 pub fn backtrace(storage: &storage::BlockStorage, since: Option<&str>, to: Option<&str>) -> Result<Vec<BlockPointer>> {

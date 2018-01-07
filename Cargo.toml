@@ -11,10 +11,12 @@ categories = ["command-line-utilities"]
 name = "tr1pd"
 path = "src/bin/tr1pd.rs"
 doc = false
+test = false
 
 [[bin]]
 name = "tr1pctl"
 path = "src/bin/tr1pctl.rs"
+test = false
 
 [badges]
 travis-ci = { repository = "kpcyrd/tr1pd" }
