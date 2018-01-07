@@ -42,8 +42,14 @@ fn main() {
     let matches = build_cli()
         .get_matches();
 
-    let mut path = env::home_dir().unwrap();
-    path.push(".tr1pd/");
+    let path = match matches.value_of("data-dir") {
+        Some(path) => path.into(),
+        None => {
+            let mut path = env::home_dir().unwrap();
+            path.push(".tr1pd/");
+            path
+        },
+    };
     let storage = BlockStorage::new(path);
     let socket = matches.value_of("socket").unwrap_or("tr1pd.sock");
     let client = Client::new(socket);

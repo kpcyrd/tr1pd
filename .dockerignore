@@ -5,3 +5,5 @@ Dockerfile
 .git
 .gitignore
 *.sw[op]
+*.sock
+*.socket
