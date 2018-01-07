@@ -168,4 +168,14 @@ impl Client {
 
         Ok(reply)
     }
+
+    #[inline]
+    pub fn write_block(&self, block: BlockRecipe) -> Result<BlockPointer, io::Error> {
+        let reply = self.send(&CtlRequest::Write(block))?;
+
+        match reply {
+            CtlResponse::Ack(pointer) => Ok(pointer),
+            _ => Err(io::Error::new(io::ErrorKind::Other, "invalid reply")),
+        }
+    }
 }

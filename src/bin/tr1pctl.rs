@@ -16,7 +16,7 @@ use tr1pd::crypto::PublicKey;
 use tr1pd::cli;
 use tr1pd::cli::tr1pctl::build_cli;
 use tr1pd::recipe::BlockRecipe;
-use tr1pd::rpc::{Client, CtlRequest, CtlResponse};
+use tr1pd::rpc::{Client, CtlRequest};
 
 use std::io;
 use std::io::stdin;
@@ -122,15 +122,9 @@ fn main() {
 
         let mut cb = |buf: Vec<u8>| {
             let block = BlockRecipe::info(buf);
-
-            match client.send(&CtlRequest::Write(block)) {
-                Ok(CtlResponse::Ack(pointer)) => {
-                    // if not quiet
-                    println!("{:x}", pointer);
-                },
-                Ok(_) => (),
-                Err(err) => eprintln!("error: {:?}", err),
-            }
+            let pointer = client.write_block(block).expect("write block");
+            // if not quiet
+            println!("{:x}", pointer);
         };
 
         match matches.value_of("size") {
@@ -159,6 +153,13 @@ fn main() {
                 }
             },
         };
+    }
+
+    if let Some(_matches) = matches.subcommand_matches("rekey") {
+        let block = BlockRecipe::Rekey;
+        let pointer = client.write_block(block).expect("write block");
+        // if not quiet
+        println!("{:x}", pointer);
     }
 
     if let Some(matches) = matches.subcommand_matches("fsck") {
