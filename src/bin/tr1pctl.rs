@@ -45,7 +45,8 @@ fn main() {
     let mut path = env::home_dir().unwrap();
     path.push(".tr1pd/");
     let storage = BlockStorage::new(path);
-    let client = Client::new("tr1pd.sock");
+    let socket = matches.value_of("socket").unwrap_or("tr1pd.sock");
+    let client = Client::new(socket);
 
 
     if let Some(matches) = matches.subcommand_matches("init") {

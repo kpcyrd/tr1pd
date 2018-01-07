@@ -93,10 +93,10 @@ fn main() {
     });
 
 
-    let addr = "tr1pd.sock".to_owned();
-    fs::remove_file(&addr).ok(); // ignore error
+    let socket = matches.value_of("socket").unwrap_or("tr1pd.sock");
+    fs::remove_file(socket).ok(); // ignore error
 
-    let server = UnixServer::new(CtlProto, addr);
+    let server = UnixServer::new(CtlProto, socket);
     server.serve(move || Ok(CtlService::new(channel.clone())));
 
 
