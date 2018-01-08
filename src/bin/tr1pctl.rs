@@ -22,6 +22,7 @@ use std::io;
 use std::io::stdin;
 use std::io::BufReader;
 use std::io::prelude::*;
+use std::path::Path;
 use std::env;
 use std::str;
 use std::process;
@@ -60,23 +61,29 @@ fn main() {
 
         let (pk, sk) = crypto::gen_keypair();
 
-        {
-            let mut file = OpenOptions::new()
-                            .write(true)
-                            .create(true)
-                            .create_new(!force)
-                            .open("/etc/tr1pd/lt.pk").expect("create lt.pk");
-            file.write_all(&pk.0).unwrap();
-        };
+        // TODO: create folder with correct permissions
 
-        {
+        let pk_path = Path::new("/etc/tr1pd/lt.pk");
+        if force || !pk_path.exists() {
             let mut file = OpenOptions::new()
                             .write(true)
                             .create(true)
                             .create_new(!force)
-                            .open("/etc/tr1pd/lt.sk").expect("create lt.sk");
+                            .open(pk_path).expect("create lt.pk");
+            file.write_all(&pk.0).unwrap();
+            println!("[+] wrote public key to {:?}", pk_path);
+        }
+
+        let sk_path = Path::new("/etc/tr1pd/lt.sk");
+        if force || !sk_path.exists() {
+            let mut file = OpenOptions::new()
+                            .write(true)
+                            .create(true)
+                            .create_new(!force)
+                            .open(sk_path).expect("create lt.sk");
             file.write_all(&sk.0).unwrap();
-        };
+            println!("[+] wrote secret key to {:?}", sk_path);
+        }
     }
 
     if let Some(matches) = matches.subcommand_matches("get") {
