@@ -28,6 +28,7 @@ use std::str;
 use std::process;
 use std::fs::File;
 use std::fs::OpenOptions;
+use std::os::unix::fs::OpenOptionsExt;
 
 fn load_pubkey(pk: &str) -> Result<PublicKey, ()> {
     let mut file = File::open(pk).expect("create lt.pk");
@@ -69,6 +70,7 @@ fn main() {
                             .write(true)
                             .create(true)
                             .create_new(!force)
+                            .mode(0o640)
                             .open(pk_path).expect("create lt.pk");
             file.write_all(&pk.0).unwrap();
             println!("[+] wrote public key to {:?}", pk_path);
@@ -80,6 +82,7 @@ fn main() {
                             .write(true)
                             .create(true)
                             .create_new(!force)
+                            .mode(0o600)
                             .open(sk_path).expect("create lt.sk");
             file.write_all(&sk.0).unwrap();
             println!("[+] wrote secret key to {:?}", sk_path);

@@ -3,6 +3,8 @@ use std::fs::File;
 use std::os::unix;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
+use std::fs::OpenOptions;
+use std::os::unix::fs::OpenOptionsExt;
 
 use nom::IResult;
 
@@ -45,6 +47,7 @@ impl BlockStorage {
 
     #[inline]
     fn ensure_parent_folder(&self, path: &Path) -> Result<()> {
+        // TODO: set permissions
         let parent = path.parent().expect("path has no parent folder");
         fs::create_dir_all(parent)?;
         Ok(())
@@ -56,7 +59,12 @@ impl BlockStorage {
 
         self.ensure_parent_folder(&path)?;
 
-        let mut file = File::create(&path)?;
+        let mut file = OpenOptions::new()
+                        .write(true)
+                        .create(true)
+                        .create_new(true)
+                        .mode(0o640)
+                        .open(&path)?;
         file.write_all(&block.encode())?;
 
         println!("wrote {:x} to {:?}", pointer, path);
