@@ -16,7 +16,7 @@ use tr1pd::crypto::PublicKey;
 use tr1pd::cli;
 use tr1pd::cli::tr1pctl::build_cli;
 use tr1pd::recipe::BlockRecipe;
-use tr1pd::rpc::{Client, CtlRequest};
+use tr1pd::rpc::{ClientBuilder, CtlRequest};
 
 use std::io;
 use std::io::stdin;
@@ -53,8 +53,9 @@ fn main() {
         },
     };
     let storage = BlockStorage::new(path);
-    let socket = matches.value_of("socket").unwrap_or("tr1pd.sock");
-    let client = Client::new(socket);
+
+    let socket = matches.value_of("socket").unwrap_or("ipc://tr1pd.sock");
+    let client = ClientBuilder::new(socket);
 
 
     if let Some(matches) = matches.subcommand_matches("init") {
@@ -106,7 +107,7 @@ fn main() {
         } else if parent {
             println!("{:x}", block.prev());
         } else if let Some(bytes) = block.msg() {
-            println!("{}", str::from_utf8(bytes).unwrap());
+            print!("{}", str::from_utf8(bytes).unwrap());
         }
     }
 
@@ -134,6 +135,7 @@ fn main() {
     }
 
     if let Some(matches) = matches.subcommand_matches("write") {
+        let mut client = client.connect().unwrap();
 
         let mut source = stdin();
 
@@ -173,6 +175,8 @@ fn main() {
     }
 
     if let Some(_matches) = matches.subcommand_matches("rekey") {
+        let mut client = client.connect().unwrap();
+
         let block = BlockRecipe::Rekey;
         let pointer = client.write_block(block).expect("write block");
         // if not quiet
@@ -256,6 +260,8 @@ fn main() {
     }
 
     if let Some(matches) = matches.subcommand_matches("ping") {
+        let mut client = client.connect().unwrap();
+
         let quiet = matches.occurrences_of("quiet") > 0;
 
         let req = CtlRequest::Ping;

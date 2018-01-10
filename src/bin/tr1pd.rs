@@ -2,10 +2,6 @@
 
 extern crate tr1pd;
 extern crate env_logger;
-extern crate tokio_uds_proto;
-extern crate mrsc;
-
-use tokio_uds_proto::UnixServer;
 
 use tr1pd::storage::BlockStorage;
 use tr1pd::engine::Engine;
@@ -13,13 +9,10 @@ use tr1pd::crypto::{SignRing, PublicKey, SecretKey};
 use tr1pd::cli;
 use tr1pd::cli::tr1pd::build_cli;
 use tr1pd::recipe::BlockRecipe;
-use tr1pd::rpc::{CtlProto, CtlService, CtlRequest, CtlResponse};
+use tr1pd::rpc::{Server, CtlRequest, CtlResponse};
 
 use std::env;
-use std::thread;
-use std::fs::{self, File};
-use std::sync::Arc;
-use std::sync::Mutex;
+use std::fs::File;
 use std::io::prelude::*;
 
 
@@ -60,51 +53,36 @@ fn main() {
             path
         },
     };
-    let storage = BlockStorage::new(path);
 
     let (pk, sk) = load_keypair("/etc/tr1pd/lt.pk", "/etc/tr1pd/lt.sk").unwrap();
 
     let ring = SignRing::new(pk, sk);
-
-    let mrsc = mrsc::Server::new();
-    let channel = Arc::new(Mutex::new(mrsc.pop()));
-
+    let storage = BlockStorage::new(path);
     let mut engine = Engine::start(storage, ring).unwrap();
 
+    let socket = matches.value_of("socket").unwrap_or("ipc://tr1pd.sock");
+    let mut server = Server::bind(socket).unwrap();
 
-    let a = thread::spawn(move || {
-        while let Ok(req) = mrsc.recv() {
-            let (req, msg) = req.take();
+    loop {
+        let msg = server.recv().unwrap();
 
+        let reply = match msg {
+            CtlRequest::Ping => CtlResponse::Pong,
+            CtlRequest::Write(block) => {
+                let pointer = match block {
+                    BlockRecipe::Rekey => {
+                        engine.rekey().unwrap()
+                    },
+                    BlockRecipe::Info(info) => {
+                        engine.info(info).unwrap();
+                        engine.rekey().unwrap()
+                    },
+                };
 
-            let reply = match msg {
-                CtlRequest::Ping => CtlResponse::Pong,
-                CtlRequest::Write(block) => {
-                    let pointer = match block {
-                        BlockRecipe::Rekey => {
-                            engine.rekey().unwrap()
-                        },
-                        BlockRecipe::Info(info) => {
-                            engine.info(info).unwrap();
-                            engine.rekey().unwrap()
-                        },
-                    };
+                CtlResponse::Ack(pointer.sha3())
+            },
+        };
 
-                    CtlResponse::Ack(pointer.sha3())
-                },
-            };
-
-            req.reply(reply).unwrap();
-        }
-    });
-
-
-    let socket = matches.value_of("socket").unwrap_or("tr1pd.sock");
-    fs::remove_file(socket).ok(); // ignore error
-
-    let server = UnixServer::new(CtlProto, socket);
-    server.serve(move || Ok(CtlService::new(channel.clone())));
-
-
-    a.join().unwrap();
+        server.reply(reply).unwrap();
+    }
 }
