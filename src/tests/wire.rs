@@ -1,6 +1,6 @@
 use wire::block;
 use blocks::prelude::*;
-use crypto::{Signature, PublicKey, Unverified};
+use crypto::{Signature, PublicKey};
 use nom::IResult;
 
 const EMPTY_SLICE: &'static [u8] = &[];
@@ -36,11 +36,11 @@ fn parse_init_block() {
             0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
             0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
         ]).unwrap()
-    ).0;
+    );
 
     let bytes = expected.encode();
     let block = block(&bytes);
-    assert_eq!(block, IResult::Done(EMPTY_SLICE, Unverified(expected)));
+    assert_eq!(block, IResult::Done(EMPTY_SLICE, expected));
 }
 
 #[test]
@@ -142,11 +142,11 @@ fn parse_rekey_block() {
             0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
             0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
         ]).unwrap()
-    ).0;
+    );
 
     let bytes = expected.encode();
     let block = block(&bytes);
-    assert_eq!(block, IResult::Done(EMPTY_SLICE, Unverified(expected)));
+    assert_eq!(block, IResult::Done(EMPTY_SLICE, expected));
 }
 
 #[test]
@@ -269,11 +269,11 @@ fn parse_alert_block() {
             0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
             0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
         ]).unwrap()
-    ).0;
+    );
 
     let bytes = expected.encode();
     let block = block(&bytes);
-    assert_eq!(block, IResult::Done(EMPTY_SLICE, Unverified(expected)));
+    assert_eq!(block, IResult::Done(EMPTY_SLICE, expected));
 }
 
 #[test]
@@ -393,11 +393,11 @@ fn parse_info_block() {
             0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
             0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
         ]).unwrap()
-    ).0;
+    );
 
     let bytes = expected.encode();
     let block = block(&bytes);
-    assert_eq!(block, IResult::Done(EMPTY_SLICE, Unverified(expected)));
+    assert_eq!(block, IResult::Done(EMPTY_SLICE, expected));
 }
 
 #[test]

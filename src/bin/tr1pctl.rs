@@ -207,8 +207,6 @@ fn main() {
             use tr1pd::wire;
             use nom::IResult;
             if let IResult::Done(_, block) = wire::block(&buf) {
-                let block = block.0;
-
                 block.verify_longterm(&longterm_pk).expect("verify_longterm");
 
                 use tr1pd::blocks::BlockType;

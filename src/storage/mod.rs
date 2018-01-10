@@ -77,8 +77,6 @@ impl BlockStorage {
         let buf = self.get_raw(pointer)?;
 
         if let IResult::Done(_, block) = wire::block(&buf) {
-            let block = block.0;
-
             // println!("[block] decoded: {:?}", block);
 
             Ok(block)
