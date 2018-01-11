@@ -26,6 +26,7 @@ pub mod crypto;
 pub mod engine;
 pub mod recipe;
 pub mod rpc;
+pub mod spec;
 pub mod storage;
 #[allow(unused_variables)]
 pub mod wire;
