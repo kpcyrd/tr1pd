@@ -46,6 +46,16 @@ impl BlockPointer {
         }
     }
 
+    #[inline]
+    pub fn empty() -> BlockPointer {
+        BlockPointer([0; 32])
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.0 == [0; 32]
+    }
+
     pub fn verify(&self, buf: &[u8]) -> Result<()> {
         let result = Sha3_256::digest(&buf);
         let calculated = BlockPointer::from_slice(result.as_slice()).unwrap();
@@ -125,10 +135,20 @@ impl Block {
         Ok(())
     }
 
+    /// Returns the BlockPointer of a block.
     #[inline]
     pub fn sha3(&self) -> BlockPointer {
-        let result = Sha3_256::digest(&self.encode());
-        BlockPointer::from_slice(result.as_slice()).unwrap()
+        let (pointer, _) = self.sha3_encode();
+        pointer
+    }
+
+    /// Same as .sha3(), but also returns the encoded block.
+    #[inline]
+    pub fn sha3_encode(&self) -> (BlockPointer, Vec<u8>) {
+        let bytes = self.encode();
+        let sha3 = Sha3_256::digest(&bytes);
+        let pointer = BlockPointer::from_slice(sha3.as_slice()).unwrap();
+        (pointer, bytes)
     }
 
     pub fn msg(&self) -> Option<&Vec<u8>> {

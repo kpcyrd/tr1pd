@@ -36,15 +36,11 @@ mod tests;
 
 
 use blocks::BlockPointer;
-pub fn backtrace(storage: &storage::BlockStorage, since: Option<&str>, to: Option<&str>) -> Result<Vec<BlockPointer>> {
+
+pub fn backtrace<S: storage::BlockStorage>(storage: &S, since: Option<&str>, to: Option<&str>) -> Result<Vec<BlockPointer>> {
     let since = match since {
         Some(since) => BlockPointer::from_hex(since)?,
-        None => BlockPointer::from_slice(&[
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-        ]).unwrap(),
+        None => BlockPointer::empty(),
     };
 
     let mut pointer = match to {
@@ -58,12 +54,7 @@ pub fn backtrace(storage: &storage::BlockStorage, since: Option<&str>, to: Optio
         let block = storage.get(&pointer)?;
         pointer = block.prev().clone();
 
-        if pointer == BlockPointer::from_slice(&[
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            ]).unwrap() {
+        if pointer.is_empty() {
             break;
         }
 

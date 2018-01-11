@@ -9,7 +9,7 @@ extern crate human_size;
 use human_size::Size;
 use colored::Colorize;
 
-use tr1pd::storage::BlockStorage;
+use tr1pd::storage::{DiskStorage, BlockStorage};
 use tr1pd::blocks::BlockPointer;
 use tr1pd::crypto;
 use tr1pd::crypto::PublicKey;
@@ -52,7 +52,7 @@ fn main() {
             path
         },
     };
-    let storage = BlockStorage::new(path);
+    let storage = DiskStorage::new(path);
 
     let socket = matches.value_of("socket").unwrap_or("ipc://tr1pd.sock");
     let client = ClientBuilder::new(socket);
@@ -200,7 +200,7 @@ fn main() {
             print!("{:x} ... ", pointer);
             io::stdout().flush().unwrap();
 
-            let buf = storage.get_raw(&pointer).unwrap();
+            let buf = storage.get_bytes(&pointer).unwrap();
 
             // TODO: do a 2-stage decode to avoid reencoding for verification
 

@@ -3,7 +3,7 @@
 extern crate tr1pd;
 extern crate env_logger;
 
-use tr1pd::storage::BlockStorage;
+use tr1pd::storage::DiskStorage;
 use tr1pd::engine::Engine;
 use tr1pd::crypto::{SignRing, PublicKey, SecretKey};
 use tr1pd::cli;
@@ -57,7 +57,7 @@ fn main() {
     let (pk, sk) = load_keypair("/etc/tr1pd/lt.pk", "/etc/tr1pd/lt.sk").unwrap();
 
     let ring = SignRing::new(pk, sk);
-    let storage = BlockStorage::new(path);
+    let storage = DiskStorage::new(path);
     let mut engine = Engine::start(storage, ring).unwrap();
 
     let socket = matches.value_of("socket").unwrap_or("ipc://tr1pd.sock");
