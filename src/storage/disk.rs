@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::fs::OpenOptions;
 use std::os::unix::fs::OpenOptionsExt;
 
-use storage::{BlockStorage, Result};
+use storage::{StorageEngine, BlockStorage, Result};
 use blocks::BlockPointer;
 
 
@@ -39,6 +39,11 @@ impl DiskStorage {
         let parent = path.parent().expect("path has no parent folder");
         fs::create_dir_all(parent)?;
         Ok(())
+    }
+
+    #[inline]
+    pub fn to_engine(self) -> StorageEngine {
+        StorageEngine::Disk(self)
     }
 }
 

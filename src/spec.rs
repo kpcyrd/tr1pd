@@ -23,6 +23,22 @@ impl Spec {
             },
         }
     }
+
+    #[inline]
+    pub fn pointer(self) -> Option<SpecPointer> {
+        match self {
+            Spec::Pointer(spec) => Some(spec),
+            _ => None,
+        }
+    }
+
+    #[inline]
+    pub fn range(self) -> Option<(SpecPointer, SpecPointer)> {
+        match self {
+            Spec::Range(spec) => Some(spec),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]

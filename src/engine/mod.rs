@@ -1,5 +1,5 @@
 use blocks::{Block, BlockPointer};
-use storage::{DiskStorage, BlockStorage};
+use storage::{StorageEngine, BlockStorage};
 use crypto::SignRing;
 
 
@@ -14,13 +14,13 @@ pub mod errors {
 use self::errors::{Result};
 
 pub struct Engine {
-    storage: DiskStorage,
+    storage: StorageEngine,
     ring: SignRing,
     head: BlockPointer,
 }
 
 impl Engine {
-    pub fn start(storage: DiskStorage, ring: SignRing) -> Result<Engine> {
+    pub fn start(storage: StorageEngine, ring: SignRing) -> Result<Engine> {
         // TODO: check if this is the first block
         // TODO: write genesis block if yes
         // TODO: build an init+alert otherwise
@@ -81,5 +81,9 @@ impl Engine {
         let block = Block::info(self.head.clone(), &mut self.ring, bytes)?;
         self.head = self.storage.push(&block)?;
         Ok(block)
+    }
+
+    pub fn storage(&self) -> &StorageEngine {
+        &self.storage
     }
 }

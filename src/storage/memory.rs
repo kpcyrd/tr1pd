@@ -1,4 +1,4 @@
-use storage::{BlockStorage, Result};
+use storage::{StorageEngine, BlockStorage, Result};
 use blocks::BlockPointer;
 
 use std::collections::BTreeMap;
@@ -14,6 +14,11 @@ impl MemoryStorage {
             blocks: BTreeMap::new(),
             head: BlockPointer::empty(),
         }
+    }
+
+    #[inline]
+    pub fn to_engine(self) -> StorageEngine {
+        StorageEngine::Memory(self)
     }
 }
 

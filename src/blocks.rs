@@ -120,6 +120,7 @@ pub struct Block {
 }
 
 impl Block {
+    #[inline]
     fn sign(inner: BlockType, keyring: &SignRing) -> Result<Block> {
         let buf = inner.encode();
         let signature = keyring.sign_longterm(&buf);
@@ -130,6 +131,7 @@ impl Block {
         })
     }
 
+    #[inline]
     pub fn verify_longterm(&self, pubkey: &PublicKey) -> Result<()> {
         crypto::verify(&self.signature, &self.inner.encode(), pubkey)?;
         Ok(())
@@ -151,6 +153,7 @@ impl Block {
         (pointer, bytes)
     }
 
+    #[inline]
     pub fn msg(&self) -> Option<&Vec<u8>> {
         match self.inner {
             BlockType::Init(_) => None,
@@ -160,6 +163,7 @@ impl Block {
         }
     }
 
+    #[inline]
     pub fn from_network(inner: BlockType, signature: Signature) -> Block {
         Block {
             inner: inner,
@@ -167,26 +171,31 @@ impl Block {
         }
     }
 
+    #[inline]
     pub fn init(prev: BlockPointer, mut keyring: &mut SignRing) -> Result<Block> {
         let inner = InitBlock::new(prev, &mut keyring);
         Block::sign(BlockType::Init(inner), &keyring)
     }
 
+    #[inline]
     pub fn rekey(prev: BlockPointer, keyring: &mut SignRing) -> Result<Block> {
         let inner = keyring.rekey(prev);
         Block::sign(BlockType::Rekey(inner), &keyring)
     }
 
+    #[inline]
     pub fn alert(prev: BlockPointer, keyring: &mut SignRing, bytes: Vec<u8>) -> Result<Block> {
         let inner = keyring.alert(prev, bytes);
         Block::sign(BlockType::Alert(inner), &keyring)
     }
 
+    #[inline]
     pub fn info(prev: BlockPointer, mut keyring: &mut SignRing, bytes: Vec<u8>) -> Result<Block> {
         let inner = InfoBlock::new(prev, &mut keyring, bytes);
         Block::sign(BlockType::Info(inner), &keyring)
     }
 
+    #[inline]
     pub fn encode(&self) -> Vec<u8> {
         let mut buf: Vec<u8> = Vec::new();
         buf.extend(self.inner.encode());
@@ -194,20 +203,56 @@ impl Block {
         buf
     }
 
+    #[inline]
     pub fn encode_inner(&self) -> Vec<u8> {
         self.inner.encode()
     }
 
+    #[inline]
     pub fn prev(&self) -> &BlockPointer {
         self.inner.prev()
     }
 
+    #[inline]
     pub fn inner(&self) -> &BlockType {
         &self.inner
     }
 
+    #[inline]
     pub fn signature(&self) -> &Signature {
         &self.signature
+    }
+
+    #[inline]
+    pub fn is_init(&self) -> bool {
+        match self.inner {
+            BlockType::Init(_) => true,
+            _ => false,
+        }
+    }
+
+    #[inline]
+    pub fn is_rekey(&self) -> bool {
+        match self.inner {
+            BlockType::Rekey(_) => true,
+            _ => false,
+        }
+    }
+
+    #[inline]
+    pub fn is_alert(&self) -> bool {
+        match self.inner {
+            BlockType::Alert(_) => true,
+            _ => false,
+        }
+    }
+
+    #[inline]
+    pub fn is_info(&self) -> bool {
+        match self.inner {
+            BlockType::Info(_) => true,
+            _ => false,
+        }
     }
 }
 

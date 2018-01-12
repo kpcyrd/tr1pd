@@ -10,6 +10,9 @@ extern crate scaproust;
 #[macro_use] extern crate error_chain;
 #[macro_use] extern crate nom;
 
+#[cfg(test)]
+extern crate pseudo;
+
 pub mod errors {
     error_chain! {
         links {
