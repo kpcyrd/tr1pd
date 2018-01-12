@@ -8,7 +8,6 @@ use tr1pd::engine::Engine;
 use tr1pd::crypto::{SignRing, PublicKey, SecretKey};
 use tr1pd::cli;
 use tr1pd::cli::tr1pd::build_cli;
-use tr1pd::recipe::BlockRecipe;
 use tr1pd::rpc::{Server, CtlRequest, CtlResponse};
 
 use std::env;
@@ -57,7 +56,7 @@ fn main() {
     let (pk, sk) = load_keypair("/etc/tr1pd/lt.pk", "/etc/tr1pd/lt.sk").unwrap();
 
     let ring = SignRing::new(pk, sk);
-    let storage = DiskStorage::new(path);
+    let storage = DiskStorage::new(path).to_engine();
     let mut engine = Engine::start(storage, ring).unwrap();
 
     let socket = matches.value_of("socket").unwrap_or("ipc://tr1pd.sock");
@@ -68,18 +67,12 @@ fn main() {
 
         let reply = match msg {
             CtlRequest::Ping => CtlResponse::Pong,
-            CtlRequest::Write(block) => {
-                let pointer = match block {
-                    BlockRecipe::Rekey => {
-                        engine.rekey().unwrap()
-                    },
-                    BlockRecipe::Info(info) => {
-                        engine.info(info).unwrap();
-                        engine.rekey().unwrap()
-                    },
-                };
-
-                CtlResponse::Ack(pointer.sha3())
+            CtlRequest::Write(block) => match engine.recipe(block) {
+                Ok(pointer) => CtlResponse::Ack(pointer),
+                Err(err) => {
+                    eprintln!("Write fail: {:?}", err);
+                    CtlResponse::Nack
+                }
             },
         };
 

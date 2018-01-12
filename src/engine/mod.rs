@@ -1,12 +1,13 @@
 use blocks::{Block, BlockPointer};
-use storage::{StorageEngine, BlockStorage};
 use crypto::SignRing;
+use recipe::BlockRecipe;
+use storage::{StorageEngine, BlockStorage};
 
 
 pub mod errors {
     error_chain! {
         links {
-            Blocks(::blocks::errors::Error, ::blocks::errors::ErrorKind);
+            Blocks(::blocks::Error, ::blocks::ErrorKind);
             Storage(::storage::errors::Error, ::storage::errors::ErrorKind);
         }
     }
@@ -81,6 +82,20 @@ impl Engine {
         let block = Block::info(self.head.clone(), &mut self.ring, bytes)?;
         self.head = self.storage.push(&block)?;
         Ok(block)
+    }
+
+    pub fn recipe(&mut self, recipe: BlockRecipe) -> Result<BlockPointer> {
+        let block = match recipe {
+            BlockRecipe::Rekey => {
+                self.rekey()?
+            },
+            BlockRecipe::Info(info) => {
+                self.info(info)?;
+                self.rekey()?
+            },
+        };
+
+        Ok(block.sha3())
     }
 
     pub fn storage(&self) -> &StorageEngine {

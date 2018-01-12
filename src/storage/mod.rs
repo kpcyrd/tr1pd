@@ -1,4 +1,4 @@
-use blocks::{BlockPointer, Block};
+use blocks::{BlockPointer, BlockIdentifier, Block};
 use spec;
 use wire;
 
@@ -21,7 +21,7 @@ pub mod errors {
             }
         }
         links {
-            Blocks(::blocks::errors::Error, ::blocks::errors::ErrorKind);
+            Blocks(::blocks::Error, ::blocks::ErrorKind);
         }
         foreign_links {
             Io(io::Error);
@@ -80,7 +80,7 @@ pub trait BlockStorage {
                 loop {
                     let block = self.get(&pointer)?;
 
-                    if block.is_init() {
+                    if block.identifier() == BlockIdentifier::Init {
                         break;
                     }
 
@@ -110,10 +110,8 @@ pub trait BlockStorage {
         loop {
             let block = self.get(&cur)?;
 
-            let ptr = block.sha3();
-
-            let found = ptr == start;
-            pointers.push(ptr);
+            let found = cur == start;
+            pointers.push(cur);
 
             if found {
                 break;

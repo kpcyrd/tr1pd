@@ -430,3 +430,50 @@ fn info_bytes() {
     let expected = bytes2vec(&expected);
     assert_eq!(expected, block.encode());
 }
+
+use engine::Engine;
+use storage::{MemoryStorage, BlockStorage};
+
+#[test]
+fn test_small_block() {
+    let (pk, sk) = crypto::gen_keypair();
+    let ring = SignRing::new(pk, sk);
+    let storage = MemoryStorage::new().to_engine();
+    let mut engine = Engine::start(storage, ring).unwrap();
+
+    let written = engine.info([0; 25].to_vec()).unwrap(); // 25B
+    let storage = engine.storage();
+    let head = storage.get_head().unwrap();
+    let info = storage.get(&head).unwrap();
+
+    assert_eq!(info, written);
+}
+
+#[test]
+fn test_large_block() {
+    let (pk, sk) = crypto::gen_keypair();
+    let ring = SignRing::new(pk, sk);
+    let storage = MemoryStorage::new().to_engine();
+    let mut engine = Engine::start(storage, ring).unwrap();
+
+    let written = engine.info([0; 65535].to_vec()).unwrap(); // 65KiB, max block size
+    let storage = engine.storage();
+    let head = storage.get_head().unwrap();
+    let info = storage.get(&head).unwrap();
+
+    assert_eq!(info, written);
+}
+
+#[test]
+fn test_too_large_block() {
+    let (pk, sk) = crypto::gen_keypair();
+    let ring = SignRing::new(pk, sk);
+    let storage = MemoryStorage::new().to_engine();
+    let mut engine = Engine::start(storage, ring).unwrap();
+
+    let err = engine.info([0; 1024*70].to_vec()).err().unwrap(); // 70KiB
+    match *err.kind() {
+        ::engine::errors::ErrorKind::Blocks(::blocks::ErrorKind::BlockTooLarge) => (),
+        _ => panic!("not BlockTooLarge error"),
+    };
+}

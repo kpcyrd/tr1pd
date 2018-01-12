@@ -25,6 +25,18 @@ impl Spec {
     }
 
     #[inline]
+    pub fn parse_range(spec: &str) -> Result<(SpecPointer, SpecPointer), ()> {
+        if let Some(idx) = spec.find("..") {
+            let (a, b) = spec.split_at(idx);
+            let a = SpecPointer::parse(a)?;
+            let b = SpecPointer::parse(&b[2..])?;
+            Ok((a, b))
+        } else {
+            panic!("TODO: invalid range");
+        }
+    }
+
+    #[inline]
     pub fn pointer(self) -> Option<SpecPointer> {
         match self {
             Spec::Pointer(spec) => Some(spec),

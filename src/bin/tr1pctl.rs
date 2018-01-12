@@ -10,11 +10,11 @@ use human_size::Size;
 use colored::Colorize;
 
 use tr1pd::storage::{DiskStorage, BlockStorage};
-use tr1pd::blocks::BlockPointer;
 use tr1pd::crypto;
 use tr1pd::crypto::PublicKey;
 use tr1pd::cli;
 use tr1pd::cli::tr1pctl::build_cli;
+use tr1pd::spec::{Spec, SpecPointer};
 use tr1pd::recipe::BlockRecipe;
 use tr1pd::rpc::{ClientBuilder, CtlRequest};
 
@@ -96,9 +96,10 @@ fn main() {
 
         let longterm_pk = load_pubkey("/etc/tr1pd/lt.pk").unwrap();
 
-        let pointer = matches.value_of("block").unwrap();
-        let pointer = BlockPointer::from_hex(pointer).unwrap();
-        let block = storage.get(&pointer).unwrap();
+        let spec = matches.value_of("block").unwrap();
+        let spec = SpecPointer::parse(spec).expect("failed to parse spec");
+        let pointer = storage.resolve_pointer(spec).expect("failed to resolve pointer");
+        let block = storage.get(&pointer).expect("failed to load block");
 
         block.verify_longterm(&longterm_pk).expect("verify_longterm");
 
@@ -140,7 +141,7 @@ fn main() {
         let mut source = stdin();
 
         let mut cb = |buf: Vec<u8>| {
-            let block = BlockRecipe::info(buf);
+            let block = BlockRecipe::info(buf).expect("couldn't build block recipe");
             let pointer = client.write_block(block).expect("write block");
             // if not quiet
             println!("{:x}", pointer);
@@ -186,17 +187,20 @@ fn main() {
     if let Some(matches) = matches.subcommand_matches("fsck") {
         let longterm_pk = load_pubkey("/etc/tr1pd/lt.pk").unwrap();
 
-        let backtrace = tr1pd::backtrace(&storage, matches.value_of("since"), matches.value_of("to")).unwrap();
+        let spec = matches.value_of("spec").unwrap_or("@.."); // TODO: default doesn't work
         let _verbose = matches.occurrences_of("verbose");
         let paranoid = matches.occurrences_of("paranoid") > 0;
 
+        let spec = Spec::parse_range(spec).expect("failed to parse spec");
+        let range = storage.resolve_range(spec).expect("failed to expand range");
+
         let mut session = None;
 
-        // The first block in the --since parameter is trusted
+        // The first block in the spec parameter is trusted
         // If this is an init block this is non-fatal in paranoid mode
         let mut first_block = true;
 
-        for pointer in backtrace.iter().rev() {
+        for pointer in storage.expand_range(range).unwrap() {
             print!("{:x} ... ", pointer);
             io::stdout().flush().unwrap();
 

@@ -8,11 +8,12 @@ use wire::len_to_u16_vec;
 use std::fmt;
 
 
-pub mod errors {
+mod errors {
     error_chain! {
         errors {
             CorruptedBlock
             InvalidBlockPointer
+            BlockTooLarge
             InvalidBlockIdentifier(b: u8) {
                 description("invalid block type identifier")
                 display("invalid block type identifier: {:x}", b)
@@ -23,12 +24,20 @@ pub mod errors {
         }
     }
 }
-use self::errors::{Result, ErrorKind};
+pub use self::errors::{Result, Error, ErrorKind};
 
 
 pub mod prelude {
     pub use super::{Block, BlockType, BlockIdentifier, BlockPointer};
     pub use super::{InitBlock, RekeyBlock, AlertBlock, InfoBlock};
+}
+
+pub fn validate_block_size(len: usize) -> Result<()> {
+    if len >= 2usize.pow(16) {
+        Err(ErrorKind::BlockTooLarge.into())
+    } else {
+        Ok(())
+    }
 }
 
 
@@ -185,12 +194,14 @@ impl Block {
 
     #[inline]
     pub fn alert(prev: BlockPointer, keyring: &mut SignRing, bytes: Vec<u8>) -> Result<Block> {
+        validate_block_size(bytes.len())?;
         let inner = keyring.alert(prev, bytes);
         Block::sign(BlockType::Alert(inner), &keyring)
     }
 
     #[inline]
     pub fn info(prev: BlockPointer, mut keyring: &mut SignRing, bytes: Vec<u8>) -> Result<Block> {
+        validate_block_size(bytes.len())?;
         let inner = InfoBlock::new(prev, &mut keyring, bytes);
         Block::sign(BlockType::Info(inner), &keyring)
     }
@@ -224,34 +235,12 @@ impl Block {
     }
 
     #[inline]
-    pub fn is_init(&self) -> bool {
+    pub fn identifier(&self) -> BlockIdentifier {
         match self.inner {
-            BlockType::Init(_) => true,
-            _ => false,
-        }
-    }
-
-    #[inline]
-    pub fn is_rekey(&self) -> bool {
-        match self.inner {
-            BlockType::Rekey(_) => true,
-            _ => false,
-        }
-    }
-
-    #[inline]
-    pub fn is_alert(&self) -> bool {
-        match self.inner {
-            BlockType::Alert(_) => true,
-            _ => false,
-        }
-    }
-
-    #[inline]
-    pub fn is_info(&self) -> bool {
-        match self.inner {
-            BlockType::Info(_) => true,
-            _ => false,
+            BlockType::Init(_)  => BlockIdentifier::Init,
+            BlockType::Rekey(_) => BlockIdentifier::Rekey,
+            BlockType::Alert(_) => BlockIdentifier::Alert,
+            BlockType::Info(_)  => BlockIdentifier::Info,
         }
     }
 }
@@ -451,7 +440,7 @@ impl Signable for AlertBlock {
         buf.extend(self.prev.0.iter());
         buf.extend(BlockIdentifier::Alert.to_vec());
         buf.extend(self.pubkey.0.iter());
-        buf.extend(len_to_u16_vec(self.bytes.len()).iter());
+        buf.extend(len_to_u16_vec(self.bytes.len()).expect("block len overflow").iter());
         buf.extend(&self.bytes);
         buf
     }
@@ -500,7 +489,7 @@ impl Signable for InfoBlock {
         let mut buf = Vec::new();
         buf.extend(self.prev.0.iter());
         buf.extend(BlockIdentifier::Info.to_vec());
-        buf.extend(len_to_u16_vec(self.bytes.len()).iter());
+        buf.extend(len_to_u16_vec(self.bytes.len()).expect("block len overflow").iter());
         buf.extend(&self.bytes);
         buf
     }

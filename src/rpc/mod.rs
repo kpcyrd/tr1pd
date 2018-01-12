@@ -41,6 +41,7 @@ pub enum CtlRequest {
 pub enum CtlResponse {
     Pong,
     Ack(BlockPointer),
+    Nack,
 }
 
 pub fn create_session() -> Session {

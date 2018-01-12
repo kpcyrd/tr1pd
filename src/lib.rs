@@ -16,7 +16,7 @@ extern crate pseudo;
 pub mod errors {
     error_chain! {
         links {
-            Blocks(::blocks::errors::Error, ::blocks::errors::ErrorKind);
+            Blocks(::blocks::Error, ::blocks::ErrorKind);
             Storage(::storage::errors::Error, ::storage::errors::ErrorKind);
         }
     }

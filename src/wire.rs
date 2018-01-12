@@ -3,16 +3,31 @@ use blocks::prelude::*;
 use crypto::prelude::*;
 
 
-// TODO: figure out the correct way
-pub fn len_to_u16_vec(i: usize) -> [u8; 2] {
-        let length = i as u16;
-        let msb = ((length & 0b1111111100000000) >> 8) as u8;
-        let lsb = (length & 0b11111111) as u8;
+mod errors {
+    error_chain! {
+        errors {
+            BlockTooLarge
+        }
+    }
+}
+pub use self::errors::{Error, ErrorKind, Result};
 
-        let mut bytes = [0; 2];
-        bytes[0] = msb;
-        bytes[1] = lsb;
-        bytes
+
+#[inline]
+pub fn len_to_u16_vec(i: usize) -> Result<[u8; 2]> {
+    if i >= 2usize.pow(16) {
+        // overflow
+        return Err(ErrorKind::BlockTooLarge.into());
+    }
+
+    let length = i as u16;
+    let msb = ((length & 0b1111111100000000) >> 8) as u8;
+    let lsb = (length & 0b11111111) as u8;
+
+    let mut bytes = [0; 2];
+    bytes[0] = msb;
+    bytes[1] = lsb;
+    Ok(bytes)
 }
 
 named!(pointer<&[u8], BlockPointer>, map_res!(take!(32), BlockPointer::from_slice));
