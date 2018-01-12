@@ -19,7 +19,7 @@ named!(pointer<&[u8], BlockPointer>, map_res!(take!(32), BlockPointer::from_slic
 named!(pubkey<&[u8], PublicKey>, map_opt!(take!(32), PublicKey::from_slice));
 named!(signature<&[u8], Signature>, map_opt!(take!(64), Signature::from_slice));
 
-fn inner(input: &[u8]) -> IResult<&[u8], Unverified<BlockType>> {
+fn inner(input: &[u8]) -> IResult<&[u8], BlockType> {
     do_parse!(input,
         prev: pointer           >>
         inner: switch!(be_u8,
@@ -32,19 +32,19 @@ fn inner(input: &[u8]) -> IResult<&[u8], Unverified<BlockType>> {
     )
 }
 
-fn init(input: &[u8], prev: BlockPointer) -> IResult<&[u8], Unverified<BlockType>> {
+fn init(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
     do_parse!(input,
         pubkey: pubkey  >>
         ({
             InitBlock::from_network(
                 prev,
                 pubkey,
-            ).into()
+            )
         })
     )
 }
 
-fn rekey(input: &[u8], prev: BlockPointer) -> IResult<&[u8], Unverified<BlockType>> {
+fn rekey(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
     do_parse!(input,
         pubkey: pubkey          >>
         signature: signature    >>
@@ -53,12 +53,12 @@ fn rekey(input: &[u8], prev: BlockPointer) -> IResult<&[u8], Unverified<BlockTyp
                 prev,
                 pubkey,
                 signature,
-            ).into()
+            )
         })
     )
 }
 
-fn alert(input: &[u8], prev: BlockPointer) -> IResult<&[u8], Unverified<BlockType>> {
+fn alert(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
     do_parse!(input,
         pubkey: pubkey          >>
         length: be_u16          >>
@@ -70,12 +70,12 @@ fn alert(input: &[u8], prev: BlockPointer) -> IResult<&[u8], Unverified<BlockTyp
                 pubkey,
                 bytes.to_vec(),
                 signature,
-            ).into()
+            )
         })
     )
 }
 
-fn info(input: &[u8], prev: BlockPointer) -> IResult<&[u8], Unverified<BlockType>> {
+fn info(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
     do_parse!(input,
         length: be_u16          >>
         bytes: take!(length)    >>
@@ -85,13 +85,13 @@ fn info(input: &[u8], prev: BlockPointer) -> IResult<&[u8], Unverified<BlockType
                 prev,
                 bytes.to_vec(),
                 signature,
-            ).into()
+            )
         })
     )
 }
 
 
-pub fn block(input: &[u8]) -> IResult<&[u8], Unverified<Block>> {
+pub fn block(input: &[u8]) -> IResult<&[u8], Block> {
     do_parse!(input,
         inner: inner            >>
         signature: signature    >>

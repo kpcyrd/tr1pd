@@ -140,11 +140,11 @@ impl Block {
         }
     }
 
-    pub fn from_network(inner: Unverified<BlockType>, signature: Signature) -> Unverified<Block> {
-        Unverified(Block {
-            inner: inner.0,
+    pub fn from_network(inner: BlockType, signature: Signature) -> Block {
+        Block {
+            inner: inner,
             signature: signature,
-        })
+        }
     }
 
     pub fn init(prev: BlockPointer, mut keyring: &mut SignRing) -> Result<Block> {
@@ -188,12 +188,6 @@ impl Block {
 
     pub fn signature(&self) -> &Signature {
         &self.signature
-    }
-}
-
-impl From<Block> for Unverified<Block> {
-    fn from(block: Block) -> Unverified<Block> {
-        Unverified(block)
     }
 }
 
@@ -259,30 +253,6 @@ impl BlockType {
     }
 }
 
-impl From<Unverified<InitBlock>> for Unverified<BlockType> {
-    fn from(block: Unverified<InitBlock>) -> Unverified<BlockType> {
-        Unverified(BlockType::Init(block.0))
-    }
-}
-
-impl From<Unverified<Signed<RekeyBlock>>> for Unverified<BlockType> {
-    fn from(block: Unverified<Signed<RekeyBlock>>) -> Unverified<BlockType> {
-        Unverified(BlockType::Rekey(block.0))
-    }
-}
-
-impl From<Unverified<Signed<AlertBlock>>> for Unverified<BlockType> {
-    fn from(block: Unverified<Signed<AlertBlock>>) -> Unverified<BlockType> {
-        Unverified(BlockType::Alert(block.0))
-    }
-}
-
-impl From<Unverified<Signed<InfoBlock>>> for Unverified<BlockType> {
-    fn from(block: Unverified<Signed<InfoBlock>>) -> Unverified<BlockType> {
-        Unverified(BlockType::Info(block.0))
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct InitBlock {
     prev: BlockPointer,
@@ -298,8 +268,8 @@ impl InitBlock {
         }
     }
 
-    pub fn from_network(prev: BlockPointer, pubkey: PublicKey) -> Unverified<InitBlock> {
-        Unverified(InitBlock {
+    pub fn from_network(prev: BlockPointer, pubkey: PublicKey) -> BlockType {
+        BlockType::Init(InitBlock {
             prev,
             pubkey,
         })
@@ -340,8 +310,8 @@ impl RekeyBlock {
         }
     }
 
-    pub fn from_network(prev: BlockPointer, pubkey: PublicKey, signature: Signature) -> Unverified<Signed<RekeyBlock>> {
-        Unverified(Signed(RekeyBlock {
+    pub fn from_network(prev: BlockPointer, pubkey: PublicKey, signature: Signature) -> BlockType {
+        BlockType::Rekey(Signed(RekeyBlock {
             prev,
             pubkey,
         }, signature))
@@ -384,8 +354,8 @@ impl AlertBlock {
         }
     }
 
-    pub fn from_network(prev: BlockPointer, pubkey: PublicKey, bytes: Vec<u8>, signature: Signature) -> Unverified<Signed<AlertBlock>> {
-        Unverified(Signed(AlertBlock {
+    pub fn from_network(prev: BlockPointer, pubkey: PublicKey, bytes: Vec<u8>, signature: Signature) -> BlockType {
+        BlockType::Alert(Signed(AlertBlock {
             prev,
             pubkey,
             bytes,
@@ -439,8 +409,8 @@ impl InfoBlock {
         Signed(block, signature)
     }
 
-    pub fn from_network(prev: BlockPointer, bytes: Vec<u8>, signature: Signature) -> Unverified<Signed<InfoBlock>> {
-        Unverified(Signed(InfoBlock {
+    pub fn from_network(prev: BlockPointer, bytes: Vec<u8>, signature: Signature) -> BlockType {
+        BlockType::Info(Signed(InfoBlock {
             prev,
             bytes,
         }, signature))

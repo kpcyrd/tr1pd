@@ -1,16 +1,10 @@
+#![warn(unused_extern_crates)]
+
 extern crate sodiumoxide;
 extern crate sha3;
 extern crate clap;
-extern crate futures;
-extern crate tokio_core;
-extern crate tokio_io;
-extern crate tokio_service;
-extern crate tokio_proto;
-extern crate tokio_uds_proto;
-extern crate serde;
 extern crate serde_json;
-extern crate mrsc;
-extern crate bytes;
+extern crate scaproust;
 #[macro_use] extern crate log;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate error_chain;

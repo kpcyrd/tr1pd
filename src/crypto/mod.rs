@@ -18,7 +18,7 @@ use self::errors::{Result, ErrorKind};
 
 
 pub mod prelude {
-    pub use super::{Unverified, Signable, Signed};
+    pub use super::{Signable, Signed};
     pub use super::{PublicKey, SecretKey, Signature};
 }
 
@@ -53,18 +53,6 @@ pub fn to_privkey(sk: &[u8]) -> Result<SecretKey> {
     }
 }
 
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Unverified<T>(pub T);
-
-impl<T> Deref for Unverified<T> {
-    type Target = T;
-
-    #[inline]
-    fn deref(&self) -> &T {
-        &self.0
-    }
-}
 
 pub trait Signable {
     fn encode(&self) -> Vec<u8>;
