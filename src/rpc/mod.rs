@@ -6,7 +6,7 @@ use std::str;
 use blocks::BlockPointer;
 use recipe::BlockRecipe;
 
-pub mod errors {
+mod errors {
     use std::io;
     use std::str;
     use serde_json;
@@ -28,7 +28,7 @@ pub mod errors {
         }
     }
 }
-use self::errors::{Result, ErrorKind};
+pub use self::errors::{Result, Error, ErrorKind};
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

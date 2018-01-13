@@ -10,7 +10,7 @@ pub mod memory;
 pub use self::disk::DiskStorage;
 pub use self::memory::MemoryStorage;
 
-pub mod errors {
+mod errors {
     use std::io;
 
     error_chain! {

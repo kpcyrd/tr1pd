@@ -5,7 +5,7 @@ use crypto::prelude::*;
 use blocks::prelude::*;
 
 
-pub mod errors {
+mod errors {
     error_chain! {
         errors {
             ProtocolViolation
@@ -15,7 +15,7 @@ pub mod errors {
         }
     }
 }
-use self::errors::{Result, ErrorKind};
+pub use self::errors::{Result, Error, ErrorKind};
 
 
 pub struct VerifyRing {

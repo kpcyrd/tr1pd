@@ -10,7 +10,7 @@ mod errors {
         }
     }
 }
-pub use self::errors::{Error, ErrorKind, Result};
+pub use self::errors::{Result, Error, ErrorKind};
 
 
 #[inline]

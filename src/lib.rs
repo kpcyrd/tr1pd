@@ -13,15 +13,15 @@ extern crate scaproust;
 #[cfg(test)]
 extern crate pseudo;
 
-pub mod errors {
+mod errors {
     error_chain! {
         links {
             Blocks(::blocks::Error, ::blocks::ErrorKind);
-            Storage(::storage::errors::Error, ::storage::errors::ErrorKind);
+            Storage(::storage::Error, ::storage::ErrorKind);
         }
     }
 }
-use self::errors::Result;
+pub use self::errors::{Result, Error, ErrorKind};
 
 pub mod blocks;
 pub mod cli;
