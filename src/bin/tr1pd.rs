@@ -5,9 +5,10 @@ extern crate env_logger;
 
 use tr1pd::storage::DiskStorage;
 use tr1pd::engine::Engine;
-use tr1pd::crypto::{SignRing, PublicKey, SecretKey};
 use tr1pd::cli;
 use tr1pd::cli::tr1pd::build_cli;
+use tr1pd::config;
+use tr1pd::crypto::{SignRing, PublicKey, SecretKey};
 use tr1pd::rpc::{Server, CtlRequest, CtlResponse};
 
 use std::fs::File;
@@ -43,14 +44,17 @@ fn main() {
         return;
     }
 
-    let (pk, sk) = load_keypair("/etc/tr1pd/lt.pk", "/etc/tr1pd/lt.sk").unwrap();
+    let config = config::load_config();
+
+    let (pk, sk) = (config.pub_key(), config.sec_key());
+    let (pk, sk) = load_keypair(pk, sk).unwrap();
 
     let ring = SignRing::new(pk, sk);
-    let path = matches.value_of("data-dir").unwrap_or(cli::TR1PD_DATADIR);
+    let path = matches.value_of("data-dir").unwrap_or(config.datadir());
     let storage = DiskStorage::new(path).to_engine();
     let mut engine = Engine::start(storage, ring).unwrap();
 
-    let socket = matches.value_of("socket").unwrap_or(cli::TR1PD_SOCKET);
+    let socket = matches.value_of("socket").unwrap_or(config.socket());
     let mut server = Server::bind(socket).unwrap();
 
     loop {

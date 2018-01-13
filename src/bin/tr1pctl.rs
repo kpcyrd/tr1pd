@@ -10,10 +10,10 @@ use human_size::Size;
 use colored::Colorize;
 
 use tr1pd::blocks::InnerBlock;
-use tr1pd::crypto;
-use tr1pd::crypto::PublicKey;
 use tr1pd::cli;
 use tr1pd::cli::tr1pctl::build_cli;
+use tr1pd::config;
+use tr1pd::crypto::{self, PublicKey};
 use tr1pd::spec::{Spec, SpecPointer};
 use tr1pd::storage::{DiskStorage, BlockStorage};
 use tr1pd::recipe::BlockRecipe;
@@ -47,10 +47,12 @@ fn main() {
     let matches = build_cli()
         .get_matches();
 
-    let path = matches.value_of("data-dir").unwrap_or(cli::TR1PD_DATADIR);
+    let config = config::load_config();
+
+    let path = matches.value_of("data-dir").unwrap_or(config.datadir());
     let storage = DiskStorage::new(path);
 
-    let socket = matches.value_of("socket").unwrap_or(cli::TR1PD_SOCKET);
+    let socket = matches.value_of("socket").unwrap_or(config.socket());
     let client = ClientBuilder::new(socket);
 
 
@@ -58,10 +60,11 @@ fn main() {
         let force = matches.occurrences_of("force") > 0;
 
         let (pk, sk) = crypto::gen_keypair();
+        let pk_path = Path::new(config.pub_key());
+        let sk_path = Path::new(config.sec_key());
 
         // TODO: create folder with correct permissions
 
-        let pk_path = Path::new("/etc/tr1pd/lt.pk");
         if force || !pk_path.exists() {
             let mut file = OpenOptions::new()
                             .write(true)
@@ -73,7 +76,6 @@ fn main() {
             println!("[+] wrote public key to {:?}", pk_path);
         }
 
-        let sk_path = Path::new("/etc/tr1pd/lt.sk");
         if force || !sk_path.exists() {
             let mut file = OpenOptions::new()
                             .write(true)
@@ -90,7 +92,7 @@ fn main() {
         let all = matches.occurrences_of("all") > 0;
         let parent = matches.occurrences_of("parent") > 0;
 
-        let longterm_pk = load_pubkey("/etc/tr1pd/lt.pk").unwrap();
+        let longterm_pk = load_pubkey(config.pub_key()).unwrap();
 
         let spec = matches.value_of("block").unwrap();
         let spec = SpecPointer::parse(spec).expect("failed to parse spec");
@@ -115,7 +117,7 @@ fn main() {
     }
 
     if let Some(matches) = matches.subcommand_matches("ls") {
-        let longterm_pk = load_pubkey("/etc/tr1pd/lt.pk").unwrap();
+        let longterm_pk = load_pubkey(config.pub_key()).unwrap();
 
         let spec = matches.value_of("spec").unwrap_or("..");
 
@@ -191,7 +193,7 @@ fn main() {
     }
 
     if let Some(matches) = matches.subcommand_matches("fsck") {
-        let longterm_pk = load_pubkey("/etc/tr1pd/lt.pk").unwrap();
+        let longterm_pk = load_pubkey(config.pub_key()).unwrap();
 
         let spec = matches.value_of("spec").unwrap_or("..");
         let _verbose = matches.occurrences_of("verbose");

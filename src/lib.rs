@@ -5,6 +5,7 @@ extern crate sha3;
 extern crate clap;
 extern crate serde_json;
 extern crate scaproust;
+extern crate toml;
 #[macro_use] extern crate log;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate error_chain;
@@ -25,6 +26,7 @@ pub use self::errors::{Result, Error, ErrorKind};
 
 pub mod blocks;
 pub mod cli;
+pub mod config;
 pub mod crypto;
 pub mod engine;
 pub mod recipe;
