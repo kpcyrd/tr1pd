@@ -137,7 +137,7 @@ fn main() {
             block.verify_longterm(&longterm_pk).expect("verify_longterm");
 
             if let Some(bytes) = block.msg() {
-                println!("{}", str::from_utf8(bytes).unwrap());
+                print!("{}", str::from_utf8(bytes).unwrap());
             }
         }
     }
@@ -180,7 +180,8 @@ fn main() {
                 let stdin = BufReader::new(source);
                 for line in stdin.lines() {
                     // discard invalid lines
-                    if let Ok(line) = line {
+                    if let Ok(mut line) = line {
+                        line.push('\n');
                         cb(line.as_bytes().to_vec());
                     }
                 }
