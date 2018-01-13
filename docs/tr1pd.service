@@ -4,6 +4,7 @@ Documentation=https://github.com/kpcyrd/tr1pd
 
 [Service]
 User=tr1pd
+ExecStartPre=/usr/bin/tr1pctl init
 ExecStart=/usr/bin/tr1pd -S ipc:///run/tr1pd/tr1pd.sock -D /var/lib/tr1pd
 
 NoNewPrivileges=yes
@@ -17,6 +18,7 @@ ProtectControlGroups=true
 RestrictAddressFamilies=AF_UNIX
 MemoryDenyWriteExecute=true
 
+ReadWritePaths=/etc/tr1pd
 ReadWritePaths=/var/lib/tr1pd
 ReadWritePaths=/run/tr1pd
 
