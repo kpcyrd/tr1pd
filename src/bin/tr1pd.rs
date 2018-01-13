@@ -10,7 +10,6 @@ use tr1pd::cli;
 use tr1pd::cli::tr1pd::build_cli;
 use tr1pd::rpc::{Server, CtlRequest, CtlResponse};
 
-use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -44,22 +43,14 @@ fn main() {
         return;
     }
 
-    let path = match matches.value_of("data-dir") {
-        Some(path) => path.into(),
-        None => {
-            let mut path = env::home_dir().unwrap();
-            path.push(".tr1pd/");
-            path
-        },
-    };
-
     let (pk, sk) = load_keypair("/etc/tr1pd/lt.pk", "/etc/tr1pd/lt.sk").unwrap();
 
     let ring = SignRing::new(pk, sk);
+    let path = matches.value_of("data-dir").unwrap_or(cli::TR1PD_DATADIR);
     let storage = DiskStorage::new(path).to_engine();
     let mut engine = Engine::start(storage, ring).unwrap();
 
-    let socket = matches.value_of("socket").unwrap_or("ipc://tr1pd.sock");
+    let socket = matches.value_of("socket").unwrap_or(cli::TR1PD_SOCKET);
     let mut server = Server::bind(socket).unwrap();
 
     loop {

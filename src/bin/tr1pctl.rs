@@ -27,7 +27,6 @@ use std::io::stdin;
 use std::io::BufReader;
 use std::io::prelude::*;
 use std::path::Path;
-use std::env;
 use std::str;
 use std::process;
 use std::fs::File;
@@ -48,17 +47,10 @@ fn main() {
     let matches = build_cli()
         .get_matches();
 
-    let path = match matches.value_of("data-dir") {
-        Some(path) => path.into(),
-        None => {
-            let mut path = env::home_dir().unwrap();
-            path.push(".tr1pd/");
-            path
-        },
-    };
+    let path = matches.value_of("data-dir").unwrap_or(cli::TR1PD_DATADIR);
     let storage = DiskStorage::new(path);
 
-    let socket = matches.value_of("socket").unwrap_or("ipc://tr1pd.sock");
+    let socket = matches.value_of("socket").unwrap_or(cli::TR1PD_SOCKET);
     let client = ClientBuilder::new(socket);
 
 

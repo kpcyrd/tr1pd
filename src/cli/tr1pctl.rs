@@ -1,22 +1,14 @@
 use clap::{App, SubCommand, Arg, AppSettings};
 
+use cli::common;
+
 #[inline]
 pub fn build_cli() -> App<'static, 'static> {
     App::new("tr1pctl")
         .settings(&[AppSettings::SubcommandRequiredElseHelp, AppSettings::ColoredHelp])
         .setting(AppSettings::VersionlessSubcommands)
-        .arg(Arg::with_name("socket")
-            .short("S")
-            .long("socket")
-            .takes_value(true)
-            .env("TR1PD_SOCKET")
-        )
-        .arg(Arg::with_name("data-dir")
-            .short("D")
-            .long("data-dir")
-            .takes_value(true)
-            .env("TR1PD_DATADIR")
-        )
+        .arg(common::socket())
+        .arg(common::data_dir())
         .subcommand(SubCommand::with_name("init")
             .setting(AppSettings::ColoredHelp)
             .about("Generate the long-term keypair")
