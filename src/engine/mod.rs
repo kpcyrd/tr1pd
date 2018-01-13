@@ -1,26 +1,27 @@
 use blocks::{Block, BlockPointer};
-use storage::BlockStorage;
 use crypto::SignRing;
+use recipe::BlockRecipe;
+use storage::{StorageEngine, BlockStorage};
 
 
-pub mod errors {
+mod errors {
     error_chain! {
         links {
-            Blocks(::blocks::errors::Error, ::blocks::errors::ErrorKind);
-            Storage(::storage::errors::Error, ::storage::errors::ErrorKind);
+            Blocks(::blocks::Error, ::blocks::ErrorKind);
+            Storage(::storage::Error, ::storage::ErrorKind);
         }
     }
 }
-use self::errors::{Result};
+pub use self::errors::{Result, Error, ErrorKind};
 
 pub struct Engine {
-    storage: BlockStorage,
+    storage: StorageEngine,
     ring: SignRing,
     head: BlockPointer,
 }
 
 impl Engine {
-    pub fn start(storage: BlockStorage, ring: SignRing) -> Result<Engine> {
+    pub fn start(storage: StorageEngine, ring: SignRing) -> Result<Engine> {
         // TODO: check if this is the first block
         // TODO: write genesis block if yes
         // TODO: build an init+alert otherwise
@@ -81,5 +82,23 @@ impl Engine {
         let block = Block::info(self.head.clone(), &mut self.ring, bytes)?;
         self.head = self.storage.push(&block)?;
         Ok(block)
+    }
+
+    pub fn recipe(&mut self, recipe: BlockRecipe) -> Result<BlockPointer> {
+        let block = match recipe {
+            BlockRecipe::Rekey => {
+                self.rekey()?
+            },
+            BlockRecipe::Info(info) => {
+                self.info(info)?;
+                self.rekey()?
+            },
+        };
+
+        Ok(block.sha3())
+    }
+
+    pub fn storage(&self) -> &StorageEngine {
+        &self.storage
     }
 }

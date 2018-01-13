@@ -1,13 +1,15 @@
-use wire::block;
-use blocks::prelude::*;
+use blocks::{BlockPointer, Block};
+use blocks::{InitBlock, RekeyBlock, AlertBlock, InfoBlock};
 use crypto::{Signature, PublicKey};
+use wire::block;
+
 use nom::IResult;
 
 const EMPTY_SLICE: &'static [u8] = &[];
 
 #[test]
 fn parse_init_block() {
-    let expected = Block::from_network(
+    let expected = Block::new(
         // inner
         InitBlock::from_network(
             // prev
@@ -65,7 +67,7 @@ fn parse_init_block_bytes() {
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
     ];
 
-    let expected = Block::from_network(
+    let expected = Block::new(
         // inner
         InitBlock::from_network(
             // prev
@@ -102,7 +104,7 @@ fn parse_init_block_bytes() {
 
 #[test]
 fn parse_rekey_block() {
-    let expected = Block::from_network(
+    let expected = Block::new(
         // inner
         RekeyBlock::from_network(
             // prev
@@ -179,7 +181,7 @@ fn parse_rekey_block_bytes() {
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
     ];
 
-    let expected = Block::from_network(
+    let expected = Block::new(
         // inner
         RekeyBlock::from_network(
             // prev
@@ -227,7 +229,7 @@ fn parse_rekey_block_bytes() {
 
 #[test]
 fn parse_alert_block() {
-    let expected = Block::from_network(
+    let expected = Block::new(
         // inner
         AlertBlock::from_network(
             // prev
@@ -308,7 +310,7 @@ fn parse_alert_block_bytes() {
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
     ];
 
-    let expected = Block::from_network(
+    let expected = Block::new(
         // inner
         AlertBlock::from_network(
             // prev
@@ -358,7 +360,7 @@ fn parse_alert_block_bytes() {
 
 #[test]
 fn parse_info_block() {
-    let expected = Block::from_network(
+    let expected = Block::new(
         // inner
         InfoBlock::from_network(
             // prev
@@ -428,7 +430,7 @@ fn parse_info_block_bytes() {
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
     ];
 
-    let expected = Block::from_network(
+    let expected = Block::new(
         // inner
         InfoBlock::from_network(
             // prev

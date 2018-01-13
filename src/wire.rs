@@ -1,25 +1,55 @@
 use nom::{IResult, be_u8, be_u16};
-use blocks::prelude::*;
-use crypto::prelude::*;
+use blocks::{BlockPointer, InnerBlock, Block};
+use blocks::{InitBlock, RekeyBlock, AlertBlock, InfoBlock};
+use crypto::{PublicKey, Signature};
 
 
-// TODO: figure out the correct way
-pub fn len_to_u16_vec(i: usize) -> [u8; 2] {
-        let length = i as u16;
-        let msb = ((length & 0b1111111100000000) >> 8) as u8;
-        let lsb = (length & 0b11111111) as u8;
+mod errors {
+    error_chain! {
+        errors {
+            BlockTooLarge
+        }
+    }
+}
+pub use self::errors::{Result, Error, ErrorKind};
 
-        let mut bytes = [0; 2];
-        bytes[0] = msb;
-        bytes[1] = lsb;
-        bytes
+
+/// Convert the length to a byte array (big endian).
+///
+/// ```
+/// use tr1pd::wire::len_to_u16_vec;
+///
+/// // regular block
+/// len_to_u16_vec(25).ok().unwrap();
+/// // maximum block size
+/// len_to_u16_vec(65535).ok().unwrap();
+/// // too large
+/// len_to_u16_vec(65536).err().unwrap();
+/// // way too large
+/// len_to_u16_vec(52_428_800).err().unwrap();
+/// ```
+#[inline]
+pub fn len_to_u16_vec(i: usize) -> Result<[u8; 2]> {
+    if i >= 2usize.pow(16) {
+        // overflow
+        return Err(ErrorKind::BlockTooLarge.into());
+    }
+
+    let length = i as u16;
+    let msb = ((length & 0b1111111100000000) >> 8) as u8;
+    let lsb = (length & 0b11111111) as u8;
+
+    let mut bytes = [0; 2];
+    bytes[0] = msb;
+    bytes[1] = lsb;
+    Ok(bytes)
 }
 
 named!(pointer<&[u8], BlockPointer>, map_res!(take!(32), BlockPointer::from_slice));
 named!(pubkey<&[u8], PublicKey>, map_opt!(take!(32), PublicKey::from_slice));
 named!(signature<&[u8], Signature>, map_opt!(take!(64), Signature::from_slice));
 
-fn inner(input: &[u8]) -> IResult<&[u8], BlockType> {
+fn inner(input: &[u8]) -> IResult<&[u8], InnerBlock> {
     do_parse!(input,
         prev: pointer           >>
         inner: switch!(be_u8,
@@ -32,7 +62,7 @@ fn inner(input: &[u8]) -> IResult<&[u8], BlockType> {
     )
 }
 
-fn init(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
+fn init(input: &[u8], prev: BlockPointer) -> IResult<&[u8], InnerBlock> {
     do_parse!(input,
         pubkey: pubkey  >>
         ({
@@ -44,7 +74,7 @@ fn init(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
     )
 }
 
-fn rekey(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
+fn rekey(input: &[u8], prev: BlockPointer) -> IResult<&[u8], InnerBlock> {
     do_parse!(input,
         pubkey: pubkey          >>
         signature: signature    >>
@@ -58,7 +88,7 @@ fn rekey(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
     )
 }
 
-fn alert(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
+fn alert(input: &[u8], prev: BlockPointer) -> IResult<&[u8], InnerBlock> {
     do_parse!(input,
         pubkey: pubkey          >>
         length: be_u16          >>
@@ -75,7 +105,7 @@ fn alert(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
     )
 }
 
-fn info(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
+fn info(input: &[u8], prev: BlockPointer) -> IResult<&[u8], InnerBlock> {
     do_parse!(input,
         length: be_u16          >>
         bytes: take!(length)    >>
@@ -96,7 +126,7 @@ pub fn block(input: &[u8]) -> IResult<&[u8], Block> {
         inner: inner            >>
         signature: signature    >>
         ({
-            Block::from_network(inner, signature)
+            Block::new(inner, signature)
         })
     )
 }

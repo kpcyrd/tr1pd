@@ -1,21 +1,20 @@
 use sodiumoxide::utils;
 
-use crypto;
-use crypto::prelude::*;
-use blocks::prelude::*;
+use blocks::{BlockPointer, RekeyBlock, AlertBlock};
+use crypto::{self, PublicKey, SecretKey, Signable, Signed, Signature};
 
 
-pub mod errors {
+mod errors {
     error_chain! {
         errors {
             ProtocolViolation
         }
         links {
-            Crypto(::crypto::errors::Error, ::crypto::errors::ErrorKind);
+            Crypto(::crypto::Error, ::crypto::ErrorKind);
         }
     }
 }
-use self::errors::{Result, ErrorKind};
+pub use self::errors::{Result, Error, ErrorKind};
 
 
 pub struct VerifyRing {

@@ -35,14 +35,14 @@ mod tests {
     }
 
     #[bench]
-    fn bench_info_1m(b: &mut Bencher) {
+    fn bench_info_64k(b: &mut Bencher) {
         let (pk, sk) = crypto::gen_keypair();
         let mut sm = SignRing::new(pk, sk);
 
         let pointer = None;
         let dummy = Block::init(pointer.into(), &mut sm).unwrap();
 
-        let bytes = vec![0; 1024*1024];
+        let bytes = vec![0; 65535];
         b.iter(|| {
             let _block = Block::info(dummy.prev().clone(), &mut sm, bytes.clone()).unwrap();
         });

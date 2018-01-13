@@ -9,14 +9,18 @@ extern crate human_size;
 use human_size::Size;
 use colored::Colorize;
 
-use tr1pd::storage::BlockStorage;
-use tr1pd::blocks::BlockPointer;
+use tr1pd::blocks::InnerBlock;
 use tr1pd::crypto;
 use tr1pd::crypto::PublicKey;
 use tr1pd::cli;
 use tr1pd::cli::tr1pctl::build_cli;
+use tr1pd::spec::{Spec, SpecPointer};
+use tr1pd::storage::{DiskStorage, BlockStorage};
 use tr1pd::recipe::BlockRecipe;
 use tr1pd::rpc::{ClientBuilder, CtlRequest};
+use tr1pd::wire;
+
+use nom::IResult;
 
 use std::io;
 use std::io::stdin;
@@ -52,7 +56,7 @@ fn main() {
             path
         },
     };
-    let storage = BlockStorage::new(path);
+    let storage = DiskStorage::new(path);
 
     let socket = matches.value_of("socket").unwrap_or("ipc://tr1pd.sock");
     let client = ClientBuilder::new(socket);
@@ -96,9 +100,10 @@ fn main() {
 
         let longterm_pk = load_pubkey("/etc/tr1pd/lt.pk").unwrap();
 
-        let pointer = matches.value_of("block").unwrap();
-        let pointer = BlockPointer::from_hex(pointer).unwrap();
-        let block = storage.get(&pointer).unwrap();
+        let spec = matches.value_of("block").unwrap();
+        let spec = SpecPointer::parse(spec).expect("failed to parse spec");
+        let pointer = storage.resolve_pointer(spec).expect("failed to resolve pointer");
+        let block = storage.get(&pointer).expect("failed to load block");
 
         block.verify_longterm(&longterm_pk).expect("verify_longterm");
 
@@ -120,16 +125,19 @@ fn main() {
     if let Some(matches) = matches.subcommand_matches("ls") {
         let longterm_pk = load_pubkey("/etc/tr1pd/lt.pk").unwrap();
 
-        let backtrace = tr1pd::backtrace(&storage, matches.value_of("since"), None).unwrap();
+        let spec = matches.value_of("spec").unwrap_or("..");
 
-        for pointer in backtrace.iter().rev() {
+        let spec = Spec::parse_range(spec).expect("failed to parse spec");
+        let range = storage.resolve_range(spec).expect("failed to expand range");
+
+        for pointer in storage.expand_range(range).unwrap() {
             let block = storage.get(&pointer).unwrap();
 
             // TODO: verify session as well
             block.verify_longterm(&longterm_pk).expect("verify_longterm");
 
             if let Some(bytes) = block.msg() {
-                println!("{}", str::from_utf8(bytes).unwrap());
+                print!("{}", str::from_utf8(bytes).unwrap());
             }
         }
     }
@@ -140,7 +148,7 @@ fn main() {
         let mut source = stdin();
 
         let mut cb = |buf: Vec<u8>| {
-            let block = BlockRecipe::info(buf);
+            let block = BlockRecipe::info(buf).expect("couldn't build block recipe");
             let pointer = client.write_block(block).expect("write block");
             // if not quiet
             println!("{:x}", pointer);
@@ -149,10 +157,16 @@ fn main() {
         match matches.value_of("size") {
             Some(size) => {
                 // TODO: this is a very strict parser, eg "512k" is invalid "512 KiB" isn't
-                let size = match size.parse::<Size>() {
+                let mut size = match size.parse::<Size>() {
                     Ok(size) => size.into_bytes() as usize,
                     Err(_) => size.parse().unwrap(),
                 };
+
+                if size >= 65536 {
+                    eprintln!("WARN: --size exceeds maximum block size, caping to 65535");
+                    size = 65535;
+                }
+
                 let mut buf = vec![0; size];
                 loop {
                     let i = source.read(&mut buf).unwrap();
@@ -166,7 +180,8 @@ fn main() {
                 let stdin = BufReader::new(source);
                 for line in stdin.lines() {
                     // discard invalid lines
-                    if let Ok(line) = line {
+                    if let Ok(mut line) = line {
+                        line.push('\n');
                         cb(line.as_bytes().to_vec());
                     }
                 }
@@ -186,32 +201,32 @@ fn main() {
     if let Some(matches) = matches.subcommand_matches("fsck") {
         let longterm_pk = load_pubkey("/etc/tr1pd/lt.pk").unwrap();
 
-        let backtrace = tr1pd::backtrace(&storage, matches.value_of("since"), matches.value_of("to")).unwrap();
+        let spec = matches.value_of("spec").unwrap_or("..");
         let _verbose = matches.occurrences_of("verbose");
         let paranoid = matches.occurrences_of("paranoid") > 0;
 
+        let spec = Spec::parse_range(spec).expect("failed to parse spec");
+        let range = storage.resolve_range(spec).expect("failed to expand range");
+
         let mut session = None;
 
-        // The first block in the --since parameter is trusted
+        // The first block in the spec parameter is trusted
         // If this is an init block this is non-fatal in paranoid mode
         let mut first_block = true;
 
-        for pointer in backtrace.iter().rev() {
+        for pointer in storage.expand_range(range).unwrap() {
             print!("{:x} ... ", pointer);
             io::stdout().flush().unwrap();
 
-            let buf = storage.get_raw(&pointer).unwrap();
+            let buf = storage.get_bytes(&pointer).unwrap();
 
             // TODO: do a 2-stage decode to avoid reencoding for verification
 
-            use tr1pd::wire;
-            use nom::IResult;
             if let IResult::Done(_, block) = wire::block(&buf) {
                 block.verify_longterm(&longterm_pk).expect("verify_longterm");
 
-                use tr1pd::blocks::BlockType;
                 match *block.inner() {
-                    BlockType::Init(ref init) => {
+                    InnerBlock::Init(ref init) => {
                         print!("{}  ... ", "init".yellow());
                         io::stdout().flush().unwrap();
 
@@ -222,7 +237,7 @@ fn main() {
                         session = Some(init.pubkey().clone());
                         // println!("ALERT: init: {:?}", session);
                     },
-                    BlockType::Rekey(ref rekey) => {
+                    InnerBlock::Rekey(ref rekey) => {
                         print!("rekey ... ");
                         io::stdout().flush().unwrap();
 
@@ -231,7 +246,7 @@ fn main() {
                         session = Some(rekey.pubkey().clone());
                         // println!("rekey: {:?}", session);
                     },
-                    BlockType::Alert(ref alert) => {
+                    InnerBlock::Alert(ref alert) => {
                         print!("alert ... ");
                         io::stdout().flush().unwrap();
 
@@ -240,7 +255,7 @@ fn main() {
                         session = Some(alert.pubkey().clone());
                         // println!("alert: {:?}", session);
                     },
-                    BlockType::Info(ref info) => {
+                    InnerBlock::Info(ref info) => {
                         print!("info  ... ");
                         io::stdout().flush().unwrap();
 

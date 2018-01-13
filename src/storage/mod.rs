@@ -1,140 +1,176 @@
-use std::fs;
-use std::fs::File;
-use std::os::unix;
-use std::io::prelude::*;
-use std::path::{Path, PathBuf};
-use std::fs::OpenOptions;
-use std::os::unix::fs::OpenOptionsExt;
+use blocks::{BlockPointer, BlockIdentifier, Block};
+use spec;
+use wire;
 
 use nom::IResult;
 
-use blocks::{BlockPointer, Block};
-use wire;
+pub mod disk;
+pub mod memory;
 
-pub mod errors {
+pub use self::disk::DiskStorage;
+pub use self::memory::MemoryStorage;
+
+mod errors {
     use std::io;
 
     error_chain! {
+        errors {
+            CorruptedEntry(bytes: Vec<u8>) {
+                description("corrupted entry")
+                display("corrupted entry: {:?}", bytes)
+            }
+        }
+        links {
+            Blocks(::blocks::Error, ::blocks::ErrorKind);
+        }
         foreign_links {
             Io(io::Error);
         }
     }
 }
-use self::errors::{Result};
+pub use self::errors::{Result, Error, ErrorKind};
 
-#[derive(Debug)]
-pub struct BlockStorage {
-    path: PathBuf,
-}
+pub trait BlockStorage {
+    fn write_bytes(&mut self, pointer: &BlockPointer, bytes: Vec<u8>) -> Result<()>;
 
-impl BlockStorage {
-    pub fn new<I: Into<PathBuf>>(path: I) -> BlockStorage {
-        BlockStorage {
-            path: path.into(),
+    fn get_bytes(&self, pointer: &BlockPointer) -> Result<Vec<u8>>;
+
+    fn get_head(&self) -> Result<BlockPointer>;
+
+    fn update_head(&mut self, pointer: &BlockPointer) -> Result<()>;
+
+    #[inline]
+    fn push(&mut self, block: &Block) -> Result<BlockPointer> {
+        let (pointer, bytes) = block.sha3_encode();
+        self.write_bytes(&pointer, bytes)?;
+        self.update_head(&pointer)?;
+        Ok(pointer)
+    }
+
+    fn get(&self, pointer: &BlockPointer) -> Result<Block> {
+        let buf = self.get_bytes(pointer)?;
+
+        if let IResult::Done(_, block) = wire::block(&buf) {
+            debug!("[block] decoded: {:?}", block);
+            Ok(block)
+        } else {
+            Err(ErrorKind::CorruptedEntry(buf.to_vec()).into())
         }
     }
 
-    pub fn pointer_to_path(&self, pointer: &BlockPointer) -> PathBuf {
-        let (prefix, hash) = pointer.slice();
+    fn resolve_pointer(&self, spec: spec::SpecPointer) -> Result<BlockPointer> {
+        use spec::SpecPointer::*;
 
-        let mut path = self.path.clone();
-        path.push("blocks");
-        path.push(prefix);
-        path.push(hash);
+        match spec {
+            Block(pointer) => Ok(pointer),
+            Parent((spec, num)) => {
+                let mut pointer = self.resolve_pointer(*spec)?;
 
-        path
+                for _ in 0..num {
+                    let block = self.get(&pointer)?;
+                    pointer = block.prev().clone();
+                }
+
+                Ok(pointer)
+            },
+            Session(spec) => {
+                let mut pointer = self.resolve_pointer(*spec)?;
+
+                loop {
+                    let block = self.get(&pointer)?;
+
+                    if block.identifier() == BlockIdentifier::Init {
+                        break;
+                    }
+
+                    pointer = block.prev().clone();
+                }
+
+                Ok(pointer)
+            },
+            Head => self.get_head(),
+            Tail => {
+                let mut pointer = self.get_head()?;
+                let mut next = self.get_head()?;
+
+                while !next.is_empty() {
+                    pointer = next;
+                    let block = self.get(&pointer)?;
+                    next = block.prev().clone();
+                }
+
+                Ok(pointer)
+            },
+        }
+    }
+
+    fn resolve_range(&self, spec: (spec::SpecPointer, spec::SpecPointer)) -> Result<(BlockPointer, BlockPointer)> {
+        let (a, b) = spec;
+        let a = self.resolve_pointer(a)?;
+        let b = self.resolve_pointer(b)?;
+        Ok((a, b))
+    }
+
+    fn expand_range(&self, range: (BlockPointer, BlockPointer)) -> Result<Vec<BlockPointer>> {
+        // TODO: inefficient, especially in combination with session pointers
+
+        let (start, stop) = range;
+
+        let mut pointers = Vec::new();
+        let mut cur = stop;
+
+        loop {
+            let block = self.get(&cur)?;
+
+            let found = cur == start;
+            pointers.push(cur);
+
+            if found {
+                break;
+            }
+
+            cur = block.prev().clone();
+        }
+
+        Ok(pointers.into_iter().rev().collect())
+    }
+}
+
+pub enum StorageEngine {
+    Disk(DiskStorage),
+    Memory(MemoryStorage),
+}
+
+impl BlockStorage for StorageEngine {
+    #[inline]
+    fn write_bytes(&mut self, pointer: &BlockPointer, bytes: Vec<u8>) -> Result<()> {
+        match *self {
+            StorageEngine::Disk(ref mut s) => s.write_bytes(pointer, bytes),
+            StorageEngine::Memory(ref mut s) => s.write_bytes(pointer, bytes),
+        }
     }
 
     #[inline]
-    fn ensure_parent_folder(&self, path: &Path) -> Result<()> {
-        // TODO: set permissions
-        let parent = path.parent().expect("path has no parent folder");
-        fs::create_dir_all(parent)?;
-        Ok(())
-    }
-
-    pub fn push(&self, block: &Block) -> Result<BlockPointer> {
-        let pointer = block.sha3();
-        let path = self.pointer_to_path(&pointer);
-
-        self.ensure_parent_folder(&path)?;
-
-        let mut file = OpenOptions::new()
-                        .write(true)
-                        .create(true)
-                        .create_new(true)
-                        .mode(0o640)
-                        .open(&path)?;
-        file.write_all(&block.encode())?;
-
-        println!("wrote {:x} to {:?}", pointer, path);
-        self.update_head(&pointer).unwrap();
-
-        Ok(pointer)
-    }
-
-    pub fn get(&self, pointer: &BlockPointer) -> Result<Block> {
-        let buf = self.get_raw(pointer)?;
-
-        if let IResult::Done(_, block) = wire::block(&buf) {
-            // println!("[block] decoded: {:?}", block);
-
-            Ok(block)
-        } else {
-            panic!("Error::CorruptedEntry")
+    fn get_bytes(&self, pointer: &BlockPointer) -> Result<Vec<u8>> {
+        match *self {
+            StorageEngine::Disk(ref s) => s.get_bytes(pointer),
+            StorageEngine::Memory(ref s) => s.get_bytes(pointer),
         }
     }
 
-    pub fn get_raw(&self, pointer: &BlockPointer) -> Result<Vec<u8>> {
-        let path = self.pointer_to_path(&pointer);
-        let mut file = File::open(path)?;
-
-        let mut buf = Vec::new();
-        file.read_to_end(&mut buf)?;
-
-        // verify block
-        pointer.verify(&buf).expect("fsck block");
-
-        Ok(buf)
-    }
-
-    pub fn get_head(&self) -> Result<BlockPointer> {
-        let mut path = self.path.clone();
-        path.push("HEAD");
-        let mut head = fs::read_link(path)?;
-
-        let hash = {
-            let x = head.file_name().unwrap();
-            x.to_str().unwrap().to_owned()
-        };
-        head.pop();
-        let prefix = {
-            let x = head.file_name().unwrap();
-            x.to_str().unwrap().to_owned()
-        };
-
-        let hex = format!("{}{}", prefix, hash);
-
-        let pointer = BlockPointer::from_hex(&hex).unwrap();
-        Ok(pointer)
-    }
-
-    pub fn update_head(&self, pointer: &BlockPointer) -> Result<()> {
-        let (prefix, hash) = pointer.slice();
-
-        let mut src = PathBuf::from("blocks");
-        src.push(prefix);
-        src.push(hash);
-
-        let mut dest = self.path.clone();
-        dest.push("HEAD");
-
-        // TODO: atomic replace
-        if let Ok(_) = fs::symlink_metadata(&dest) {
-            fs::remove_file(&dest)?;
+    #[inline]
+    fn get_head(&self) -> Result<BlockPointer> {
+        match *self {
+            StorageEngine::Disk(ref s) => s.get_head(),
+            StorageEngine::Memory(ref s) => s.get_head(),
         }
+    }
 
-        unix::fs::symlink(src, dest)?;
-        Ok(())
+    #[inline]
+    fn update_head(&mut self, pointer: &BlockPointer) -> Result<()> {
+        match *self {
+            StorageEngine::Disk(ref mut s) => s.update_head(pointer),
+            StorageEngine::Memory(ref mut s) => s.update_head(pointer),
+        }
     }
 }

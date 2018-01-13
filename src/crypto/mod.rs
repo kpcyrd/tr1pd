@@ -6,7 +6,7 @@ pub mod ring;
 
 pub use self::ring::{VerifyRing, SignRing};
 
-pub mod errors {
+mod errors {
     error_chain! {
         errors {
             InvalidSignature
@@ -14,13 +14,7 @@ pub mod errors {
         }
     }
 }
-use self::errors::{Result, ErrorKind};
-
-
-pub mod prelude {
-    pub use super::{Signable, Signed};
-    pub use super::{PublicKey, SecretKey, Signature};
-}
+pub use self::errors::{Result, Error, ErrorKind};
 
 
 pub fn gen_keypair() -> (PublicKey, SecretKey) {

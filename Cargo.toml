@@ -33,8 +33,10 @@ env_logger = "0.4"
 colored = "1.6"
 human-size = "0.2"
 
-scaproust = { git = "https://github.com/blabaere/scaproust.git" }
-
+scaproust = "0.3.2"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
+
+[dev-dependencies]
+pseudo = "0.0.3"
