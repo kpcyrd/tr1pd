@@ -1,7 +1,6 @@
 use sha3::{Digest, Sha3_256};
 
-use crypto;
-use crypto::prelude::*;
+use crypto::{self, PublicKey, Signable, Signed, Signature};
 use crypto::ring::SignRing;
 use wire::len_to_u16_vec;
 
@@ -27,11 +26,20 @@ mod errors {
 pub use self::errors::{Result, Error, ErrorKind};
 
 
-pub mod prelude {
-    pub use super::{Block, BlockType, BlockIdentifier, BlockPointer};
-    pub use super::{InitBlock, RekeyBlock, AlertBlock, InfoBlock};
-}
-
+/// Validate the message doesn't exceed the maximum length of (2**16)-1.
+///
+/// ```
+/// use tr1pd::blocks::validate_block_size;
+///
+/// // regular block
+/// validate_block_size(25).ok().unwrap();
+/// // maximum block size
+/// validate_block_size(65535).ok().unwrap();
+/// // too large
+/// validate_block_size(65536).err().unwrap();
+/// // way too large
+/// validate_block_size(52_428_800).err().unwrap();
+/// ```
 pub fn validate_block_size(len: usize) -> Result<()> {
     if len >= 2usize.pow(16) {
         Err(ErrorKind::BlockTooLarge.into())
@@ -41,6 +49,9 @@ pub fn validate_block_size(len: usize) -> Result<()> {
 }
 
 
+/// Pointer to a [`Block`]
+///
+/// [`Block`]: struct.Block.html
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BlockPointer(pub [u8; 32]);
 
@@ -122,15 +133,26 @@ impl fmt::LowerHex for BlockPointer {
     }
 }
 
+/// The outer block
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Block {
-    inner: BlockType,
+    inner: InnerBlock,
     signature: Signature,
 }
 
 impl Block {
+    /// Build a new block.
     #[inline]
-    fn sign(inner: BlockType, keyring: &SignRing) -> Result<Block> {
+    pub fn new(inner: InnerBlock, signature: Signature) -> Block {
+        Block {
+            inner: inner,
+            signature: signature,
+        }
+    }
+
+    /// Sign an inner block with the long-term key.
+    #[inline]
+    fn sign(inner: InnerBlock, keyring: &SignRing) -> Result<Block> {
         let buf = inner.encode();
         let signature = keyring.sign_longterm(&buf);
 
@@ -140,20 +162,25 @@ impl Block {
         })
     }
 
+    /// Verify the long-term signature of the outer block.
     #[inline]
     pub fn verify_longterm(&self, pubkey: &PublicKey) -> Result<()> {
         crypto::verify(&self.signature, &self.inner.encode(), pubkey)?;
         Ok(())
     }
 
-    /// Returns the BlockPointer of a block.
+    /// Returns the [`BlockPointer`] of a block.
+    ///
+    /// [`BlockPointer`]: struct.BlockPointer.html
     #[inline]
     pub fn sha3(&self) -> BlockPointer {
         let (pointer, _) = self.sha3_encode();
         pointer
     }
 
-    /// Same as .sha3(), but also returns the encoded block.
+    /// Same as [`Block::sha3`], but also returns the encoded block.
+    ///
+    /// [`Block::sha3`]: #method.sha3
     #[inline]
     pub fn sha3_encode(&self) -> (BlockPointer, Vec<u8>) {
         let bytes = self.encode();
@@ -162,50 +189,52 @@ impl Block {
         (pointer, bytes)
     }
 
+    /// Return the encoded message of the block, if there's any.
     #[inline]
     pub fn msg(&self) -> Option<&Vec<u8>> {
         match self.inner {
-            BlockType::Init(_) => None,
-            BlockType::Rekey(_) => None,
-            BlockType::Alert(ref block) => Some(block.bytes()),
-            BlockType::Info(ref block) => Some(block.bytes()),
+            InnerBlock::Init(_)  => None,
+            InnerBlock::Rekey(_) => None,
+            InnerBlock::Alert(ref block) => Some(block.bytes()),
+            InnerBlock::Info(ref block)  => Some(block.bytes()),
         }
     }
 
-    #[inline]
-    pub fn from_network(inner: BlockType, signature: Signature) -> Block {
-        Block {
-            inner: inner,
-            signature: signature,
-        }
-    }
-
+    /// Build a new init block.
     #[inline]
     pub fn init(prev: BlockPointer, mut keyring: &mut SignRing) -> Result<Block> {
         let inner = InitBlock::new(prev, &mut keyring);
-        Block::sign(BlockType::Init(inner), &keyring)
+        Block::sign(InnerBlock::Init(inner), &keyring)
     }
 
+    /// Build a new rekey block.
     #[inline]
     pub fn rekey(prev: BlockPointer, keyring: &mut SignRing) -> Result<Block> {
         let inner = keyring.rekey(prev);
-        Block::sign(BlockType::Rekey(inner), &keyring)
+        Block::sign(InnerBlock::Rekey(inner), &keyring)
     }
 
+    /// Build a new alert block.
     #[inline]
     pub fn alert(prev: BlockPointer, keyring: &mut SignRing, bytes: Vec<u8>) -> Result<Block> {
         validate_block_size(bytes.len())?;
         let inner = keyring.alert(prev, bytes);
-        Block::sign(BlockType::Alert(inner), &keyring)
+        Block::sign(InnerBlock::Alert(inner), &keyring)
     }
 
+    /// Build a new info block.
     #[inline]
     pub fn info(prev: BlockPointer, mut keyring: &mut SignRing, bytes: Vec<u8>) -> Result<Block> {
         validate_block_size(bytes.len())?;
         let inner = InfoBlock::new(prev, &mut keyring, bytes);
-        Block::sign(BlockType::Info(inner), &keyring)
+        Block::sign(InnerBlock::Info(inner), &keyring)
     }
 
+    /// Encode the block to it's binary format. See [`Block::sha3_encode`] if
+    /// you also need the [`BlockPointer`] of the block.
+    ///
+    /// [`Block::sha3_encode`]: #method.sha3_encode
+    /// [`BlockPointer`]: struct.BlockPointer.html
     #[inline]
     pub fn encode(&self) -> Vec<u8> {
         let mut buf: Vec<u8> = Vec::new();
@@ -214,33 +243,34 @@ impl Block {
         buf
     }
 
-    #[inline]
-    pub fn encode_inner(&self) -> Vec<u8> {
-        self.inner.encode()
-    }
-
+    /// Return the pointer to the parent block.
     #[inline]
     pub fn prev(&self) -> &BlockPointer {
         self.inner.prev()
     }
 
+    /// Return the inner block.
     #[inline]
-    pub fn inner(&self) -> &BlockType {
+    pub fn inner(&self) -> &InnerBlock {
         &self.inner
     }
 
+    /// Return the long-term signature of the block.
     #[inline]
     pub fn signature(&self) -> &Signature {
         &self.signature
     }
 
+    /// Return the [`BlockIdentifier`] for the inner block.
+    ///
+    /// [`BlockIdentifier`]: enum.BlockIdentifier.html
     #[inline]
     pub fn identifier(&self) -> BlockIdentifier {
         match self.inner {
-            BlockType::Init(_)  => BlockIdentifier::Init,
-            BlockType::Rekey(_) => BlockIdentifier::Rekey,
-            BlockType::Alert(_) => BlockIdentifier::Alert,
-            BlockType::Info(_)  => BlockIdentifier::Info,
+            InnerBlock::Init(_)  => BlockIdentifier::Init,
+            InnerBlock::Rekey(_) => BlockIdentifier::Rekey,
+            InnerBlock::Alert(_) => BlockIdentifier::Alert,
+            InnerBlock::Info(_)  => BlockIdentifier::Info,
         }
     }
 }
@@ -266,10 +296,10 @@ impl BlockIdentifier {
 
     pub fn to_byte(&self) -> u8 {
         match *self {
-            BlockIdentifier::Init => 0x00,
+            BlockIdentifier::Init  => 0x00,
             BlockIdentifier::Rekey => 0x01,
             BlockIdentifier::Alert => 0x02,
-            BlockIdentifier::Info => 0x03,
+            BlockIdentifier::Info  => 0x03,
         }
     }
 
@@ -280,29 +310,29 @@ impl BlockIdentifier {
 
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum BlockType {
+pub enum InnerBlock {
     Init(InitBlock),
     Rekey(Signed<RekeyBlock>),
     Alert(Signed<AlertBlock>),
     Info(Signed<InfoBlock>),
 }
 
-impl BlockType {
+impl InnerBlock {
     fn prev(&self) -> &BlockPointer {
         match *self {
-            BlockType::Init(ref inner) => inner.prev(),
-            BlockType::Rekey(ref inner) => inner.prev(),
-            BlockType::Alert(ref inner) => inner.prev(),
-            BlockType::Info(ref inner) => inner.prev(),
+            InnerBlock::Init(ref inner)  => inner.prev(),
+            InnerBlock::Rekey(ref inner) => inner.prev(),
+            InnerBlock::Alert(ref inner) => inner.prev(),
+            InnerBlock::Info(ref inner)  => inner.prev(),
         }
     }
 
     fn encode(&self) -> Vec<u8> {
         match *self {
-            BlockType::Init(ref inner) => inner.encode(),
-            BlockType::Rekey(ref inner) => inner.encode(),
-            BlockType::Alert(ref inner) => inner.encode(),
-            BlockType::Info(ref inner) => inner.encode(),
+            InnerBlock::Init(ref inner)  => inner.encode(),
+            InnerBlock::Rekey(ref inner) => inner.encode(),
+            InnerBlock::Alert(ref inner) => inner.encode(),
+            InnerBlock::Info(ref inner)  => inner.encode(),
         }
     }
 }
@@ -322,8 +352,8 @@ impl InitBlock {
         }
     }
 
-    pub fn from_network(prev: BlockPointer, pubkey: PublicKey) -> BlockType {
-        BlockType::Init(InitBlock {
+    pub fn from_network(prev: BlockPointer, pubkey: PublicKey) -> InnerBlock {
+        InnerBlock::Init(InitBlock {
             prev,
             pubkey,
         })
@@ -364,8 +394,8 @@ impl RekeyBlock {
         }
     }
 
-    pub fn from_network(prev: BlockPointer, pubkey: PublicKey, signature: Signature) -> BlockType {
-        BlockType::Rekey(Signed(RekeyBlock {
+    pub fn from_network(prev: BlockPointer, pubkey: PublicKey, signature: Signature) -> InnerBlock {
+        InnerBlock::Rekey(Signed(RekeyBlock {
             prev,
             pubkey,
         }, signature))
@@ -408,8 +438,8 @@ impl AlertBlock {
         }
     }
 
-    pub fn from_network(prev: BlockPointer, pubkey: PublicKey, bytes: Vec<u8>, signature: Signature) -> BlockType {
-        BlockType::Alert(Signed(AlertBlock {
+    pub fn from_network(prev: BlockPointer, pubkey: PublicKey, bytes: Vec<u8>, signature: Signature) -> InnerBlock {
+        InnerBlock::Alert(Signed(AlertBlock {
             prev,
             pubkey,
             bytes,
@@ -463,8 +493,8 @@ impl InfoBlock {
         Signed(block, signature)
     }
 
-    pub fn from_network(prev: BlockPointer, bytes: Vec<u8>, signature: Signature) -> BlockType {
-        BlockType::Info(Signed(InfoBlock {
+    pub fn from_network(prev: BlockPointer, bytes: Vec<u8>, signature: Signature) -> InnerBlock {
+        InnerBlock::Info(Signed(InfoBlock {
             prev,
             bytes,
         }, signature))

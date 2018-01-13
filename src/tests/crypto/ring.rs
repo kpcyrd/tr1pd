@@ -1,5 +1,5 @@
+use blocks::BlockPointer;
 use crypto;
-use blocks::prelude::*;
 use crypto::ring::{VerifyRing, SignRing};
 
 #[test]

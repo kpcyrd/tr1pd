@@ -9,14 +9,18 @@ extern crate human_size;
 use human_size::Size;
 use colored::Colorize;
 
-use tr1pd::storage::{DiskStorage, BlockStorage};
+use tr1pd::blocks::InnerBlock;
 use tr1pd::crypto;
 use tr1pd::crypto::PublicKey;
 use tr1pd::cli;
 use tr1pd::cli::tr1pctl::build_cli;
 use tr1pd::spec::{Spec, SpecPointer};
+use tr1pd::storage::{DiskStorage, BlockStorage};
 use tr1pd::recipe::BlockRecipe;
 use tr1pd::rpc::{ClientBuilder, CtlRequest};
+use tr1pd::wire;
+
+use nom::IResult;
 
 use std::io;
 use std::io::stdin;
@@ -208,14 +212,11 @@ fn main() {
 
             // TODO: do a 2-stage decode to avoid reencoding for verification
 
-            use tr1pd::wire;
-            use nom::IResult;
             if let IResult::Done(_, block) = wire::block(&buf) {
                 block.verify_longterm(&longterm_pk).expect("verify_longterm");
 
-                use tr1pd::blocks::BlockType;
                 match *block.inner() {
-                    BlockType::Init(ref init) => {
+                    InnerBlock::Init(ref init) => {
                         print!("{}  ... ", "init".yellow());
                         io::stdout().flush().unwrap();
 
@@ -226,7 +227,7 @@ fn main() {
                         session = Some(init.pubkey().clone());
                         // println!("ALERT: init: {:?}", session);
                     },
-                    BlockType::Rekey(ref rekey) => {
+                    InnerBlock::Rekey(ref rekey) => {
                         print!("rekey ... ");
                         io::stdout().flush().unwrap();
 
@@ -235,7 +236,7 @@ fn main() {
                         session = Some(rekey.pubkey().clone());
                         // println!("rekey: {:?}", session);
                     },
-                    BlockType::Alert(ref alert) => {
+                    InnerBlock::Alert(ref alert) => {
                         print!("alert ... ");
                         io::stdout().flush().unwrap();
 
@@ -244,7 +245,7 @@ fn main() {
                         session = Some(alert.pubkey().clone());
                         // println!("alert: {:?}", session);
                     },
-                    BlockType::Info(ref info) => {
+                    InnerBlock::Info(ref info) => {
                         print!("info  ... ");
                         io::stdout().flush().unwrap();
 

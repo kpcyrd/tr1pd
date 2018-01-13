@@ -1,8 +1,7 @@
 use sodiumoxide::utils;
 
-use crypto;
-use crypto::prelude::*;
-use blocks::prelude::*;
+use blocks::{BlockPointer, RekeyBlock, AlertBlock};
+use crypto::{self, PublicKey, SecretKey, Signable, Signed, Signature};
 
 
 mod errors {

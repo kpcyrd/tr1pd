@@ -1,6 +1,7 @@
 use nom::{IResult, be_u8, be_u16};
-use blocks::prelude::*;
-use crypto::prelude::*;
+use blocks::{BlockPointer, InnerBlock, Block};
+use blocks::{InitBlock, RekeyBlock, AlertBlock, InfoBlock};
+use crypto::{PublicKey, Signature};
 
 
 mod errors {
@@ -34,7 +35,7 @@ named!(pointer<&[u8], BlockPointer>, map_res!(take!(32), BlockPointer::from_slic
 named!(pubkey<&[u8], PublicKey>, map_opt!(take!(32), PublicKey::from_slice));
 named!(signature<&[u8], Signature>, map_opt!(take!(64), Signature::from_slice));
 
-fn inner(input: &[u8]) -> IResult<&[u8], BlockType> {
+fn inner(input: &[u8]) -> IResult<&[u8], InnerBlock> {
     do_parse!(input,
         prev: pointer           >>
         inner: switch!(be_u8,
@@ -47,7 +48,7 @@ fn inner(input: &[u8]) -> IResult<&[u8], BlockType> {
     )
 }
 
-fn init(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
+fn init(input: &[u8], prev: BlockPointer) -> IResult<&[u8], InnerBlock> {
     do_parse!(input,
         pubkey: pubkey  >>
         ({
@@ -59,7 +60,7 @@ fn init(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
     )
 }
 
-fn rekey(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
+fn rekey(input: &[u8], prev: BlockPointer) -> IResult<&[u8], InnerBlock> {
     do_parse!(input,
         pubkey: pubkey          >>
         signature: signature    >>
@@ -73,7 +74,7 @@ fn rekey(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
     )
 }
 
-fn alert(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
+fn alert(input: &[u8], prev: BlockPointer) -> IResult<&[u8], InnerBlock> {
     do_parse!(input,
         pubkey: pubkey          >>
         length: be_u16          >>
@@ -90,7 +91,7 @@ fn alert(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
     )
 }
 
-fn info(input: &[u8], prev: BlockPointer) -> IResult<&[u8], BlockType> {
+fn info(input: &[u8], prev: BlockPointer) -> IResult<&[u8], InnerBlock> {
     do_parse!(input,
         length: be_u16          >>
         bytes: take!(length)    >>
@@ -111,7 +112,7 @@ pub fn block(input: &[u8]) -> IResult<&[u8], Block> {
         inner: inner            >>
         signature: signature    >>
         ({
-            Block::from_network(inner, signature)
+            Block::new(inner, signature)
         })
     )
 }

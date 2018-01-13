@@ -17,12 +17,6 @@ mod errors {
 pub use self::errors::{Result, Error, ErrorKind};
 
 
-pub mod prelude {
-    pub use super::{Signable, Signed};
-    pub use super::{PublicKey, SecretKey, Signature};
-}
-
-
 pub fn gen_keypair() -> (PublicKey, SecretKey) {
     sign::gen_keypair()
 }

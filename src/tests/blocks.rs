@@ -1,7 +1,7 @@
-// use machine::{SignMachine, VerifyMachine};
+use blocks::{BlockPointer, Block};
+use blocks::{InitBlock, RekeyBlock, AlertBlock, InfoBlock};
 use crypto::{self, SignRing};
 use crypto::{PublicKey, Signature};
-use blocks::prelude::*;
 
 fn bytes2vec(x: &[u8]) -> Vec<u8> {
     let mut vec = Vec::new();
@@ -66,7 +66,7 @@ fn fmt_pointer() {
 
 #[test]
 fn sha3() {
-    let block = Block::from_network(
+    let block = Block::new(
         // inner
         InitBlock::from_network(
             // prev
@@ -138,7 +138,7 @@ fn init_bytes() {
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
     ];
 
-    let block = Block::from_network(
+    let block = Block::new(
         // inner
         InitBlock::from_network(
             // prev
@@ -214,7 +214,7 @@ fn rekey_bytes() {
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
     ];
 
-    let block = Block::from_network(
+    let block = Block::new(
         // inner
         RekeyBlock::from_network(
             // prev
@@ -303,7 +303,7 @@ fn alert_bytes() {
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
     ];
 
-    let block = Block::from_network(
+    let block = Block::new(
         // inner
         AlertBlock::from_network(
             // prev
@@ -390,7 +390,7 @@ fn info_bytes() {
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
     ];
 
-    let block = Block::from_network(
+    let block = Block::new(
         // inner
         InfoBlock::from_network(
             // prev
@@ -473,7 +473,7 @@ fn test_too_large_block() {
 
     let err = engine.info([0; 1024*70].to_vec()).err().unwrap(); // 70KiB
     match *err.kind() {
-        ::engine::errors::ErrorKind::Blocks(::blocks::ErrorKind::BlockTooLarge) => (),
+        ::engine::ErrorKind::Blocks(::blocks::ErrorKind::BlockTooLarge) => (),
         _ => panic!("not BlockTooLarge error"),
     };
 }
