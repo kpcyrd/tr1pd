@@ -63,7 +63,6 @@ pub trait BlockStorage {
 
         match spec {
             Block(pointer) => Ok(pointer),
-            Head => self.get_head(),
             Parent((spec, num)) => {
                 let mut pointer = self.resolve_pointer(*spec)?;
 
@@ -85,6 +84,19 @@ pub trait BlockStorage {
                     }
 
                     pointer = block.prev().clone();
+                }
+
+                Ok(pointer)
+            },
+            Head => self.get_head(),
+            Tail => {
+                let mut pointer = self.get_head()?;
+                let mut next = self.get_head()?;
+
+                while !next.is_empty() {
+                    pointer = next;
+                    let block = self.get(&pointer)?;
+                    next = block.prev().clone();
                 }
 
                 Ok(pointer)

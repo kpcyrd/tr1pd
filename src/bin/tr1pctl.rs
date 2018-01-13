@@ -125,9 +125,12 @@ fn main() {
     if let Some(matches) = matches.subcommand_matches("ls") {
         let longterm_pk = load_pubkey("/etc/tr1pd/lt.pk").unwrap();
 
-        let backtrace = tr1pd::backtrace(&storage, matches.value_of("since"), None).unwrap();
+        let spec = matches.value_of("spec").unwrap_or("..");
 
-        for pointer in backtrace.iter().rev() {
+        let spec = Spec::parse_range(spec).expect("failed to parse spec");
+        let range = storage.resolve_range(spec).expect("failed to expand range");
+
+        for pointer in storage.expand_range(range).unwrap() {
             let block = storage.get(&pointer).unwrap();
 
             // TODO: verify session as well
@@ -197,7 +200,7 @@ fn main() {
     if let Some(matches) = matches.subcommand_matches("fsck") {
         let longterm_pk = load_pubkey("/etc/tr1pd/lt.pk").unwrap();
 
-        let spec = matches.value_of("spec").unwrap_or("@.."); // TODO: default doesn't work
+        let spec = matches.value_of("spec").unwrap_or("..");
         let _verbose = matches.occurrences_of("verbose");
         let paranoid = matches.occurrences_of("paranoid") > 0;
 

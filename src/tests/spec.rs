@@ -120,3 +120,12 @@ fn test_range_this_session() {
         SpecPointer::Head,
     )));
 }
+
+#[test]
+fn test_range_genesis_to_head() {
+    let spec = Spec::parse("..").unwrap();
+    assert_eq!(spec, Spec::Range((
+        SpecPointer::Tail,
+        SpecPointer::Head,
+    )));
+}

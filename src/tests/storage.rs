@@ -133,3 +133,48 @@ fn test_spec_expand_range() {
 
     assert_eq!(expanded_pointers, pointers);
 }
+
+#[test]
+fn test_spec_range_genesis_to_head() {
+    let spec = Spec::parse("..").unwrap();
+    let spec = spec.range().unwrap();
+
+    let (pk, sk) = crypto::gen_keypair();
+    let ring = SignRing::new(pk, sk);
+    let storage = MemoryStorage::new().to_engine();
+
+    let mut pointers = Vec::new();
+    let mut engine = Engine::start(storage, ring).unwrap();
+    pointers.push(engine.storage().get_head().unwrap());
+
+    engine.rekey().unwrap();
+    pointers.push(engine.storage().get_head().unwrap());
+
+    engine.rekey().unwrap();
+    pointers.push(engine.storage().get_head().unwrap());
+
+    engine.init().unwrap();
+    pointers.push(engine.storage().get_head().unwrap());
+
+    engine.rekey().unwrap();
+    pointers.push(engine.storage().get_head().unwrap());
+
+    engine.init().unwrap();
+    pointers.push(engine.storage().get_head().unwrap());
+
+    engine.rekey().unwrap();
+    pointers.push(engine.storage().get_head().unwrap());
+
+    engine.rekey().unwrap();
+    pointers.push(engine.storage().get_head().unwrap());
+
+    engine.rekey().unwrap();
+    pointers.push(engine.storage().get_head().unwrap());
+
+
+    let storage = engine.storage();
+    let range = storage.resolve_range(spec).unwrap();
+    let expanded_pointers = storage.expand_range(range).unwrap();
+
+    assert_eq!(expanded_pointers, pointers);
+}
