@@ -1,0 +1,24 @@
+[Unit]
+Description=tr1pd
+Documentation=https://github.com/kpcyrd/tr1pd
+
+[Service]
+User=tr1pd
+ExecStart=/usr/bin/tr1pd -S ipc:///run/tr1pd/tr1pd.sock -D /var/lib/tr1pd
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX
+MemoryDenyWriteExecute=true
+
+ReadWritePaths=/var/lib/tr1pd
+ReadWritePaths=/run/tr1pd
+
+[Install]
+WantedBy=multi-user.target

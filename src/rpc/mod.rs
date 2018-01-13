@@ -2,6 +2,8 @@ use scaproust::{self, SessionBuilder, Session, Ipc, Req, Rep};
 use serde_json;
 
 use std::str;
+use std::fs::{self, Permissions};
+use std::os::unix::fs::PermissionsExt;
 
 use blocks::BlockPointer;
 use recipe::BlockRecipe;
@@ -61,7 +63,14 @@ impl Server {
         let mut session = create_session();
         let mut socket = session.create_socket::<Rep>()?;
 
-        socket.bind(url)?;
+        socket.bind(&url)?;
+
+        // fix permissions
+        if url.starts_with("ipc://") {
+            // TODO: write a proper solution
+            let perms = Permissions::from_mode(0o770);
+            fs::set_permissions(&url[6..], perms)?;
+        }
 
         Ok(Server {
             session,
