@@ -7,6 +7,8 @@
 
 **Status: Very unstable, do not use**
 
+tr1pd is a tamper resistant audit log.
+
 ## Installation
 
 Make sure you have libsodium installed.
