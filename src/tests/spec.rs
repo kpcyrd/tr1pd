@@ -52,12 +52,48 @@ fn test_session() {
     ));
 }
 
-// TODO: session parent!?
+#[test]
+fn test_parent_session() {
+    let spec = Spec::parse("@29d9e6ba2f74855a40ecad13b8506cf1470bdbf604209d2d6696e85d98faba86^").unwrap();
+
+    assert_eq!(spec, Spec::Pointer(
+        SpecPointer::Parent((Box::new(
+            SpecPointer::Session(Box::new(
+                SpecPointer::Block(BlockPointer::from_slice(DEFAULT_SLICE_29D9).unwrap())
+            ))
+        ), 1))
+    ));
+}
 
 #[test]
 fn test_head() {
     let spec = Spec::parse("HEAD").unwrap();
     assert_eq!(spec, Spec::Pointer(SpecPointer::Head));
+}
+
+#[test]
+fn test_head_session() {
+    let spec = Spec::parse("@HEAD").unwrap();
+    assert_eq!(spec, Spec::Pointer(SpecPointer::Session(Box::new(SpecPointer::Head))));
+}
+
+#[test]
+fn test_head_parent() {
+    let spec = Spec::parse("HEAD^").unwrap();
+    assert_eq!(spec, Spec::Pointer(SpecPointer::Parent((Box::new(SpecPointer::Head), 1))));
+}
+
+#[test]
+fn test_head_parent_session() {
+    let spec = Spec::parse("@HEAD^").unwrap();
+
+    assert_eq!(spec, Spec::Pointer(
+        SpecPointer::Parent((Box::new(
+            SpecPointer::Session(Box::new(
+                SpecPointer::Head
+            ))
+        ), 1))
+    ));
 }
 
 #[test]

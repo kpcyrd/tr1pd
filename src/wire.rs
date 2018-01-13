@@ -14,6 +14,20 @@ mod errors {
 pub use self::errors::{Result, Error, ErrorKind};
 
 
+/// Convert the length to a byte array (big endian).
+///
+/// ```
+/// use tr1pd::wire::len_to_u16_vec;
+///
+/// // regular block
+/// len_to_u16_vec(25).ok().unwrap();
+/// // maximum block size
+/// len_to_u16_vec(65535).ok().unwrap();
+/// // too large
+/// len_to_u16_vec(65536).err().unwrap();
+/// // way too large
+/// len_to_u16_vec(52_428_800).err().unwrap();
+/// ```
 #[inline]
 pub fn len_to_u16_vec(i: usize) -> Result<[u8; 2]> {
     if i >= 2usize.pow(16) {

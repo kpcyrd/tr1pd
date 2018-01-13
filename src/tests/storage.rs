@@ -82,6 +82,30 @@ fn test_spec_get_session() {
 }
 
 #[test]
+fn test_spec_get_parent_session() {
+    let spec = Spec::parse("@HEAD^").unwrap();
+    let spec = spec.pointer().unwrap();
+
+    let (pk, sk) = crypto::gen_keypair();
+    let ring = SignRing::new(pk, sk);
+    let storage = MemoryStorage::new().to_engine();
+
+    let mut engine = Engine::start(storage, ring).unwrap();
+    engine.rekey().unwrap();
+    let session_parent = engine.storage().get_head().unwrap();
+
+    engine.init().unwrap();
+    engine.rekey().unwrap();
+    engine.rekey().unwrap();
+    engine.rekey().unwrap();
+
+    let storage = engine.storage();
+    let pointer = storage.resolve_pointer(spec).unwrap();
+
+    assert_eq!(pointer, session_parent);
+}
+
+#[test]
 fn test_spec_expand_range() {
     let spec = Spec::parse("@HEAD..").unwrap();
     let spec = spec.range().unwrap();

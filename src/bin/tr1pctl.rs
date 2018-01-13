@@ -154,10 +154,16 @@ fn main() {
         match matches.value_of("size") {
             Some(size) => {
                 // TODO: this is a very strict parser, eg "512k" is invalid "512 KiB" isn't
-                let size = match size.parse::<Size>() {
+                let mut size = match size.parse::<Size>() {
                     Ok(size) => size.into_bytes() as usize,
                     Err(_) => size.parse().unwrap(),
                 };
+
+                if size >= 65536 {
+                    eprintln!("WARN: --size exceeds maximum block size, caping to 65535");
+                    size = 65535;
+                }
+
                 let mut buf = vec![0; size];
                 loop {
                     let i = source.read(&mut buf).unwrap();

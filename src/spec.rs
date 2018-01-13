@@ -63,8 +63,6 @@ pub enum SpecPointer {
 
 impl SpecPointer {
     pub fn parse(spec: &str) -> Result<SpecPointer, ()> {
-        // TODO: ^ or @ first?
-
         if spec.ends_with("^") {
             let mut i = 0;
             let len = spec.len();

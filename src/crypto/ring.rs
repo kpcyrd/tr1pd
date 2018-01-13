@@ -10,7 +10,7 @@ mod errors {
             ProtocolViolation
         }
         links {
-            Crypto(::crypto::errors::Error, ::crypto::errors::ErrorKind);
+            Crypto(::crypto::Error, ::crypto::ErrorKind);
         }
     }
 }
