@@ -6,6 +6,7 @@ extern crate clap;
 extern crate serde_json;
 extern crate scaproust;
 extern crate toml;
+extern crate human_size;
 #[macro_use] extern crate log;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate error_chain;

@@ -4,9 +4,7 @@ extern crate tr1pd;
 extern crate env_logger;
 extern crate nom;
 extern crate colored;
-extern crate human_size;
 
-use human_size::Size;
 use colored::Colorize;
 
 use tr1pd::blocks::InnerBlock;
@@ -16,7 +14,7 @@ use tr1pd::config;
 use tr1pd::crypto::{self, PublicKey};
 use tr1pd::spec::{Spec, SpecPointer};
 use tr1pd::storage::{DiskStorage, BlockStorage};
-use tr1pd::recipe::BlockRecipe;
+use tr1pd::recipe::{self, BlockRecipe, InfoBlockPipe};
 use tr1pd::rpc::{ClientBuilder, CtlRequest};
 use tr1pd::wire;
 
@@ -24,7 +22,6 @@ use nom::IResult;
 
 use std::io;
 use std::io::stdin;
-use std::io::BufReader;
 use std::io::prelude::*;
 use std::path::Path;
 use std::str;
@@ -139,47 +136,14 @@ fn main() {
     if let Some(matches) = matches.subcommand_matches("write") {
         let mut client = client.connect().unwrap();
 
-        let mut source = stdin();
+        let mut pipe = InfoBlockPipe::new(client, stdin());
 
-        let mut cb = |buf: Vec<u8>| {
-            let block = BlockRecipe::info(buf).expect("couldn't build block recipe");
-            let pointer = client.write_block(block).expect("write block");
-            // if not quiet
-            println!("{:x}", pointer);
-        };
+        let size = matches.value_of("size")
+            .map(|size| recipe::parse_size(size).expect("failed to parse size"));
 
-        match matches.value_of("size") {
-            Some(size) => {
-                // TODO: this is a very strict parser, eg "512k" is invalid "512 KiB" isn't
-                let mut size = match size.parse::<Size>() {
-                    Ok(size) => size.into_bytes() as usize,
-                    Err(_) => size.parse().unwrap(),
-                };
-
-                if size >= 65536 {
-                    eprintln!("WARN: --size exceeds maximum block size, caping to 65535");
-                    size = 65535;
-                }
-
-                let mut buf = vec![0; size];
-                loop {
-                    let i = source.read(&mut buf).unwrap();
-                    if i == 0 {
-                        break;
-                    }
-                    cb(buf[..i].to_vec());
-                }
-            },
-            None => {
-                let stdin = BufReader::new(source);
-                for line in stdin.lines() {
-                    // discard invalid lines
-                    if let Ok(mut line) = line {
-                        line.push('\n');
-                        cb(line.as_bytes().to_vec());
-                    }
-                }
-            },
+        match size {
+            Some(size) => pipe.start_bytes(size),
+            None       => pipe.start_lines(),
         };
     }
 
