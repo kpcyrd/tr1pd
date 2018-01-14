@@ -71,6 +71,13 @@ a blockchain.
 
 [not a blockchain]: https://gist.github.com/joepie91/e49d2bdc9dfec4adc9da8a8434fd029b
 
+## Trivia
+
+The initial draft for the protocol was designed in 2014 for perimeter
+intrustion detection to verify integrity of buildings. Multiple prototypes have
+been written in 2017 and the first deployment was on a server located at the
+34C3 to ensure integrity inside the congress colocation.
+
 ## License
 
 AGPLv3+
