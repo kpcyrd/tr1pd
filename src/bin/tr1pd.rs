@@ -9,6 +9,7 @@ use tr1pd::cli;
 use tr1pd::cli::tr1pd::build_cli;
 use tr1pd::config;
 use tr1pd::crypto::{SignRing, PublicKey, SecretKey};
+use tr1pd::sandbox;
 use tr1pd::rpc::{Server, CtlRequest, CtlResponse};
 
 use std::fs::File;
@@ -35,6 +36,8 @@ fn load_keypair(pk: &str, sk: &str) -> Option<(PublicKey, SecretKey)> {
 
 fn main() {
     env_logger::init().unwrap();
+
+    sandbox::activate_stage1().expect("sandbox stage1");
 
     let matches = build_cli()
         .get_matches();

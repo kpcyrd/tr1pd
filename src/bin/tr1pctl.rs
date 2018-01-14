@@ -12,6 +12,7 @@ use tr1pd::cli;
 use tr1pd::cli::tr1pctl::build_cli;
 use tr1pd::config;
 use tr1pd::crypto::{self, PublicKey};
+use tr1pd::sandbox;
 use tr1pd::spec::{Spec, SpecPointer};
 use tr1pd::storage::{DiskStorage, BlockStorage};
 use tr1pd::recipe::{self, BlockRecipe, InfoBlockPipe};
@@ -45,6 +46,14 @@ fn main() {
 
     let matches = build_cli()
         .get_matches();
+
+    if !matches.is_present("from") {
+        // `tr1pctl from` can't setup seccomp properly
+        // since the new process would inherit our filter.
+        // if that problem has been resolved, activate_stage1
+        // should be moved below env_logger::init
+        sandbox::activate_stage1().expect("sandbox stage1");
+    }
 
     let config = config::load_config();
 

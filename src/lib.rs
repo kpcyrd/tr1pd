@@ -7,6 +7,8 @@ extern crate serde_json;
 extern crate scaproust;
 extern crate toml;
 extern crate human_size;
+extern crate seccomp_sys;
+extern crate libc;
 #[macro_use] extern crate log;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate error_chain;
@@ -32,6 +34,7 @@ pub mod crypto;
 pub mod engine;
 pub mod recipe;
 pub mod rpc;
+pub mod sandbox;
 pub mod spec;
 pub mod storage;
 #[allow(unused_variables)]

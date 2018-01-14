@@ -25,8 +25,8 @@ tr1pd is a tamper resistant audit log.
 ## Installation
 
 Make sure you have libsodium installed.
-Debian/Ubuntu: `libsodium-dev`,
-Archlinux: `libsodium`
+Debian/Ubuntu: `libsodium-dev libseccomp-dev`,
+Archlinux: `libsodium libseccomp`
 
     cargo install tr1pd
 
