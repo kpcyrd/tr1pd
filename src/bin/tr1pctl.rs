@@ -29,6 +29,8 @@ use std::process;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::os::unix::fs::OpenOptionsExt;
+use std::process::{Command, Stdio};
+
 
 fn load_pubkey(pk: &str) -> Result<PublicKey, ()> {
     let mut file = File::open(pk).expect("create lt.pk");
@@ -145,6 +147,35 @@ fn main() {
             Some(size) => pipe.start_bytes(size),
             None       => pipe.start_lines(),
         };
+    }
+
+    if let Some(matches) = matches.subcommand_matches("from") {
+        let mut client = client.connect().unwrap();
+
+        let size = matches.value_of("size")
+            .map(|size| recipe::parse_size(size).expect("failed to parse size"));
+
+        let mut cmd: Vec<&str> = matches.values_of("cmd").unwrap().collect();
+
+        let prog = cmd.remove(0);
+        let args = cmd;
+
+        // println!("executing: {:?} {:?}", prog, args);
+
+        let mut child = Command::new(prog)
+            .args(args)
+            .stdout(Stdio::piped())
+            .spawn().expect("failed to start");
+
+        let stdout = child.stdout.take().unwrap();
+        let mut pipe = InfoBlockPipe::new(client, stdout);
+
+        match size {
+            Some(size) => pipe.start_bytes(size),
+            None       => pipe.start_lines(),
+        };
+
+        let _status = child.wait().expect("failed to wait on child");
     }
 
     if let Some(_matches) = matches.subcommand_matches("rekey") {
