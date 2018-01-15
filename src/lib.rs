@@ -14,6 +14,9 @@ extern crate users;
 extern crate seccomp_sys;
 #[cfg(target_os="linux")]
 extern crate caps;
+#[cfg(target_os="openbsd")]
+#[macro_use] extern crate pledge;
+
 #[macro_use] extern crate log;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate error_chain;

@@ -1,5 +1,8 @@
 use config::Config;
 
+#[cfg(target_os="openbsd")]
+use pledge::{pledge, Promise, ToPromiseString};
+
 mod errors {
     #[cfg(target_os="linux")]
     use sandbox::seccomp;
@@ -33,6 +36,15 @@ pub fn activate_stage1() -> Result<()> {
     #[cfg(target_os="linux")]
     seccomp::activate_stage1()?;
 
+    #[cfg(target_os="openbsd")]
+    {
+        info!("calling pledge");
+        match pledge![Stdio, RPath, WPath, CPath, Dns, Unix, Fattr, Inet] {
+            Err(_) => panic!("failed to pledge"),
+            _ => (),
+        };
+    }
+
     info!("stage 1/2 is active");
 
     Ok(())
@@ -59,6 +71,17 @@ pub fn activate_stage2(config: &mut Config) -> Result<()> {
 
     #[cfg(target_os="linux")]
     seccomp::activate_tr1pd_stage2()?;
+
+    #[cfg(target_os="openbsd")]
+    {
+        info!("calling pledge");
+        match pledge![Stdio, RPath, WPath, CPath, Inet] {
+            Err(_) => panic!("failed to pledge"),
+            _ => (),
+        };
+    }
+
+    info!("stage 2/2 is active");
 
     Ok(())
 }

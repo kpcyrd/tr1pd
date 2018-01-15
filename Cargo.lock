@@ -422,6 +422,14 @@ version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "pledge"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "libc 0.2.36 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "pseudo"
 version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -666,6 +674,7 @@ dependencies = [
  "libc 0.2.36 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pledge 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pseudo 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "scaproust 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "seccomp-sys 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -816,6 +825,7 @@ dependencies = [
 "checksum nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "05aec50c70fd288702bcd93284a8444607f3292dbdf2a30de5ea5dcdbe72287b"
 "checksum num-traits 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)" = "cacfcab5eb48250ee7d0c7896b51a2c5eec99c1feea5f32025635f5ae4b00070"
 "checksum pkg-config 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)" = "3a8b4c6b8165cd1a1cd4b9b120978131389f64bdaf456435caa41e630edba903"
+"checksum pledge 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "e2b18e3ecf06a0c1dbaec50d88bc89d4b8769001c8d46e952a42cf93e8b6ebe5"
 "checksum pseudo 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "63867660eb96fa962c8609f8cd004458631d8f5f33ce8c0aaa8a898ac4be277b"
 "checksum quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)" = "7a6e920b65c65f10b2ae65c831a81a073a89edd28c7cce89475bff467ab4167a"
 "checksum redox_syscall 0.1.37 (registry+https://github.com/rust-lang/crates.io-index)" = "0d92eecebad22b767915e4d529f89f28ee96dbbf5a4810d2b844373f136417fd"
