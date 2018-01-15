@@ -7,8 +7,12 @@ extern crate serde_json;
 extern crate scaproust;
 extern crate toml;
 extern crate human_size;
-extern crate seccomp_sys;
 extern crate libc;
+#[cfg(not(target_os="linux"))]
+extern crate users;
+#[cfg(target_os="linux")]
+extern crate seccomp_sys;
+#[cfg(target_os="linux")]
 extern crate caps;
 #[macro_use] extern crate log;
 #[macro_use] extern crate serde_derive;
