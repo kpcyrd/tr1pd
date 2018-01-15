@@ -1,4 +1,4 @@
-use config::{Config, DaemonConfig};
+use config::{Config, DaemonConfig, SecurityConfig};
 
 
 #[test]
@@ -20,6 +20,9 @@ fn parse_config() {
 
     pub_key = "/etc/tr1pd/pub.key"
     sec_key = "/etc/tr1pd/sec.key"
+
+    [security]
+    strict_chroot = true
     "#;
 
     let config = Config::parse(&data).unwrap();
@@ -30,6 +33,9 @@ fn parse_config() {
 
             pub_key: Some("/etc/tr1pd/pub.key".into()),
             sec_key: Some("/etc/tr1pd/sec.key".into()),
-        }
+        },
+        security: SecurityConfig {
+            strict_chroot: true,
+        },
     });
 }

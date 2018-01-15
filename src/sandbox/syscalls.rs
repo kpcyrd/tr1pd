@@ -58,6 +58,12 @@ pub enum Syscall {
     sched_yield         = libc::SYS_sched_yield         as isize,
     madvise             = libc::SYS_madvise             as isize,
     exit                = libc::SYS_exit                as isize,
+    prctl               = libc::SYS_prctl               as isize,
+    seccomp             = libc::SYS_seccomp             as isize,
+    capget              = libc::SYS_capget              as isize,
+    capset              = libc::SYS_capset              as isize,
+    chroot              = libc::SYS_chroot              as isize,
+    chdir               = libc::SYS_chdir               as isize,
 }
 
 impl Syscall {
