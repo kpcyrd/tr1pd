@@ -69,14 +69,24 @@ pub fn activate_stage1() -> Result<()> {
     ctx.allow_syscall(Syscall::getrandom)?;
     ctx.allow_syscall(Syscall::futex)?;
     ctx.allow_syscall(Syscall::openat)?;
+    ctx.allow_syscall(Syscall::open)?;
     ctx.allow_syscall(Syscall::ioctl)?;
     ctx.allow_syscall(Syscall::close)?;
+    #[cfg(not(target_arch = "aarch64"))]
     ctx.allow_syscall(Syscall::readlink)?;
+    ctx.allow_syscall(Syscall::readlinkat)?;
+    #[cfg(not(target_arch = "aarch64"))]
     ctx.allow_syscall(Syscall::mkdir)?;
+    ctx.allow_syscall(Syscall::mkdirat)?;
     #[cfg(not(target_arch = "aarch64"))]
     ctx.allow_syscall(Syscall::lstat)?;
+    ctx.allow_syscall(Syscall::newfstatat)?;
+    #[cfg(not(target_arch = "aarch64"))]
     ctx.allow_syscall(Syscall::unlink)?;
+    ctx.allow_syscall(Syscall::unlinkat)?;
+    #[cfg(not(target_arch = "aarch64"))]
     ctx.allow_syscall(Syscall::symlink)?;
+    ctx.allow_syscall(Syscall::symlinkat)?;
     ctx.allow_syscall(Syscall::clone)?;
     ctx.allow_syscall(Syscall::set_robust_list)?;
     ctx.allow_syscall(Syscall::sigaltstack)?;
@@ -86,11 +96,15 @@ pub fn activate_stage1() -> Result<()> {
     ctx.allow_syscall(Syscall::epoll_create1)?;
     ctx.allow_syscall(Syscall::epoll_ctl)?;
     ctx.allow_syscall(Syscall::epoll_pwait)?;
+    ctx.allow_syscall(Syscall::epoll_wait)?;
+    #[cfg(not(target_arch = "aarch64"))]
     ctx.allow_syscall(Syscall::stat)?;
     ctx.allow_syscall(Syscall::socket)?;
     ctx.allow_syscall(Syscall::bind)?;
     ctx.allow_syscall(Syscall::listen)?;
+    #[cfg(not(target_arch = "aarch64"))]
     ctx.allow_syscall(Syscall::chmod)?;
+    ctx.allow_syscall(Syscall::fchmodat)?;
     ctx.allow_syscall(Syscall::accept4)?;
     ctx.allow_syscall(Syscall::recvfrom)?;
     ctx.allow_syscall(Syscall::shutdown)?;
