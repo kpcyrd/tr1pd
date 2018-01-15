@@ -9,6 +9,7 @@ extern crate toml;
 extern crate human_size;
 extern crate seccomp_sys;
 extern crate libc;
+extern crate caps;
 #[macro_use] extern crate log;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate error_chain;

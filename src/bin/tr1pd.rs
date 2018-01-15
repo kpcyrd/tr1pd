@@ -47,18 +47,23 @@ fn main() {
         return;
     }
 
-    let config = config::load_config();
+    let mut config = config::load_config();
 
-    let (pk, sk) = (config.pub_key(), config.sec_key());
-    let (pk, sk) = load_keypair(pk, sk).unwrap();
+    config.set_socket(matches.value_of("socket"));
+    config.set_datadir(matches.value_of("data-dir"));
+
+    let (pk, sk) = {
+        let (pk, sk) = (config.pub_key(), config.sec_key());
+        load_keypair(&pk, &sk).expect("load keypair")
+    };
+
+    let mut server = Server::bind(config.socket()).unwrap();
+
+    sandbox::activate_stage2(&mut config).expect("sandbox stage2");
 
     let ring = SignRing::new(pk, sk);
-    let path = matches.value_of("data-dir").unwrap_or(config.datadir());
-    let storage = DiskStorage::new(path).to_engine();
+    let storage = DiskStorage::new(config.datadir()).to_engine();
     let mut engine = Engine::start(storage, ring).unwrap();
-
-    let socket = matches.value_of("socket").unwrap_or(config.socket());
-    let mut server = Server::bind(socket).unwrap();
 
     loop {
         let msg = server.recv().unwrap();

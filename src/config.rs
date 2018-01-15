@@ -55,6 +55,8 @@ pub fn load_configfile<P: AsRef<Path>>(path: P) -> Result<Config> {
 pub struct Config {
     #[serde(default)]
     pub daemon: DaemonConfig,
+    #[serde(default)]
+    pub security: SecurityConfig,
 }
 
 impl Config {
@@ -73,10 +75,24 @@ impl Config {
     }
 
     #[inline]
+    pub fn set_socket<I: Into<String>>(&mut self, socket: Option<I>) {
+        if let Some(socket) = socket {
+            self.daemon.socket = Some(socket.into());
+        }
+    }
+
+    #[inline]
     pub fn datadir(&self) -> &str {
         match self.daemon.datadir.as_ref() {
             Some(datadir) => datadir,
             None => cli::TR1PD_DATADIR,
+        }
+    }
+
+    #[inline]
+    pub fn set_datadir<I: Into<String>>(&mut self, datadir: Option<I>) {
+        if let Some(datadir) = datadir {
+            self.daemon.datadir = Some(datadir.into());
         }
     }
 
@@ -106,3 +122,8 @@ pub struct DaemonConfig {
     pub sec_key: Option<String>,
 }
 
+#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct SecurityConfig {
+    #[serde(default)]
+    pub strict_chroot: bool,
+}
