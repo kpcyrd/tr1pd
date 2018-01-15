@@ -69,6 +69,7 @@ pub fn activate_stage1() -> Result<()> {
     ctx.allow_syscall(Syscall::getrandom)?;
     ctx.allow_syscall(Syscall::futex)?;
     ctx.allow_syscall(Syscall::openat)?;
+    #[cfg(not(target_arch = "aarch64"))]
     ctx.allow_syscall(Syscall::open)?;
     ctx.allow_syscall(Syscall::ioctl)?;
     ctx.allow_syscall(Syscall::close)?;
@@ -96,6 +97,7 @@ pub fn activate_stage1() -> Result<()> {
     ctx.allow_syscall(Syscall::epoll_create1)?;
     ctx.allow_syscall(Syscall::epoll_ctl)?;
     ctx.allow_syscall(Syscall::epoll_pwait)?;
+    #[cfg(not(target_arch = "aarch64"))]
     ctx.allow_syscall(Syscall::epoll_wait)?;
     #[cfg(not(target_arch = "aarch64"))]
     ctx.allow_syscall(Syscall::stat)?;
