@@ -11,20 +11,12 @@ mod errors {
     #[cfg(target_os="linux")]
     use caps;
 
-    #[cfg(target_os="linux")]
     error_chain! {
         errors {
             FFI
         }
         foreign_links {
-            Caps(caps::errors::Error);
-        }
-    }
-
-    #[cfg(not(target_os="linux"))]
-    error_chain! {
-        errors {
-            FFI
+            Caps(caps::errors::Error) #[cfg(target_os="linux")];
         }
     }
 }

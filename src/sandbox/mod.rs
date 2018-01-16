@@ -8,17 +8,9 @@ mod errors {
     use sandbox::seccomp;
     use sandbox::chroot;
 
-    #[cfg(target_os="linux")]
     error_chain! {
         links {
-            Seccomp(seccomp::Error, seccomp::ErrorKind);
-            Chroot(chroot::Error, chroot::ErrorKind);
-        }
-    }
-
-    #[cfg(not(target_os="linux"))]
-    error_chain! {
-        links {
+            Seccomp(seccomp::Error, seccomp::ErrorKind) #[cfg(target_os="linux")];
             Chroot(chroot::Error, chroot::ErrorKind);
         }
     }
