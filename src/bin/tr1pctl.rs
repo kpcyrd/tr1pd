@@ -145,7 +145,7 @@ fn main() {
     }
 
     if let Some(matches) = matches.subcommand_matches("write") {
-        let mut client = client.connect().unwrap();
+        let client = client.connect().unwrap();
 
         let mut pipe = InfoBlockPipe::new(client, stdin());
 
@@ -159,7 +159,7 @@ fn main() {
     }
 
     if let Some(matches) = matches.subcommand_matches("from") {
-        let mut client = client.connect().unwrap();
+        let client = client.connect().unwrap();
 
         let size = matches.value_of("size")
             .map(|size| recipe::parse_size(size).expect("failed to parse size"));

@@ -1,12 +1,17 @@
 use libc;
+#[cfg(not(target_os="linux"))]
+use users;
+#[cfg(target_os="linux")]
 use caps::{self, CapSet, Capability};
 
 use std::env;
 use std::ffi::CString;
 
 mod errors {
+    #[cfg(target_os="linux")]
     use caps;
 
+    #[cfg(target_os="linux")]
     error_chain! {
         errors {
             FFI
@@ -15,10 +20,18 @@ mod errors {
             Caps(caps::errors::Error);
         }
     }
+
+    #[cfg(not(target_os="linux"))]
+    error_chain! {
+        errors {
+            FFI
+        }
+    }
 }
 pub use self::errors::{Result, Error, ErrorKind};
 
 
+#[cfg(target_os="linux")]
 #[inline]
 pub fn log_permitted_caps() -> Result<()> {
     let cur = caps::read(None, CapSet::Permitted)?;
@@ -26,6 +39,7 @@ pub fn log_permitted_caps() -> Result<()> {
     Ok(())
 }
 
+#[cfg(target_os="linux")]
 #[inline]
 pub fn can_chroot() -> Result<bool> {
     log_permitted_caps()?;
@@ -36,6 +50,14 @@ pub fn can_chroot() -> Result<bool> {
     Ok(perm_chroot)
 }
 
+#[cfg(not(target_os="linux"))]
+#[inline]
+pub fn can_chroot() -> Result<bool> {
+    let is_root = users::get_effective_uid() == 0;
+    Ok(is_root)
+}
+
+#[cfg(target_os="linux")]
 #[inline]
 pub fn drop_caps() -> Result<()> {
     caps::clear(None, CapSet::Permitted)?;
