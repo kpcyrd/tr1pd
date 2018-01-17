@@ -32,7 +32,7 @@ users = "0.6.0"
 pledge = "0.3.1"
 
 log = "0.4"
-env_logger = "0.4"
+env_logger = "0.5"
 colored = "1.6"
 human-size = "0.2"
 

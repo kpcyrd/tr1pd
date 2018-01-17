@@ -42,7 +42,7 @@ fn load_pubkey(pk: &str) -> Result<PublicKey, ()> {
 }
 
 fn main() {
-    env_logger::init().unwrap();
+    env_logger::init();
 
     let matches = build_cli()
         .get_matches();
