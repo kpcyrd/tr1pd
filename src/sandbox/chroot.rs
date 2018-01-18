@@ -1,30 +1,24 @@
 use libc;
 #[cfg(not(target_os="linux"))]
 use users;
+
 #[cfg(target_os="linux")]
-use caps::{self, CapSet, Capability};
+use sandbox::capabilities;
+use config::Config;
 
 use std::env;
 use std::ffi::CString;
 
 mod errors {
     #[cfg(target_os="linux")]
-    use caps;
+    use sandbox::capabilities;
 
-    #[cfg(target_os="linux")]
     error_chain! {
         errors {
             FFI
         }
-        foreign_links {
-            Caps(caps::errors::Error);
-        }
-    }
-
-    #[cfg(not(target_os="linux"))]
-    error_chain! {
-        errors {
-            FFI
+        links {
+            Caps(capabilities::Error, capabilities::ErrorKind) #[cfg(target_os="linux")];
         }
     }
 }
@@ -33,20 +27,8 @@ pub use self::errors::{Result, Error, ErrorKind};
 
 #[cfg(target_os="linux")]
 #[inline]
-pub fn log_permitted_caps() -> Result<()> {
-    let cur = caps::read(None, CapSet::Permitted)?;
-    debug!("caps: permitted caps: {:?}.", cur);
-    Ok(())
-}
-
-#[cfg(target_os="linux")]
-#[inline]
 pub fn can_chroot() -> Result<bool> {
-    log_permitted_caps()?;
-
-    let perm_chroot = caps::has_cap(None, CapSet::Permitted, Capability::CAP_SYS_CHROOT)?;
-    info!("caps: can chroot: {:?}", perm_chroot);
-
+    let perm_chroot = capabilities::can_chroot()?;
     Ok(perm_chroot)
 }
 
@@ -57,13 +39,22 @@ pub fn can_chroot() -> Result<bool> {
     Ok(is_root)
 }
 
-#[cfg(target_os="linux")]
 #[inline]
-pub fn drop_caps() -> Result<()> {
-    caps::clear(None, CapSet::Permitted)?;
-    info!("caps: permitted caps cleared");
+pub fn lock_to_datadir(config: &mut Config) -> Result<()> {
+    if can_chroot()? {
+        {
+            let target = config.datadir();
+            debug!("chroot: -> {:?}", target);
+            chroot(target)?;
+        }
+        config.set_datadir(Some("/"));
 
-    log_permitted_caps()?;
+        // XXX: it's currently not recommended to use chroot
+        // on a platform that isn't linux since we don't have
+        // capabilities(7) there and we don't have setuid code yet.
+    } else if config.security.strict_chroot {
+        panic!("strict-chroot is set and process didn't chroot");
+    }
 
     Ok(())
 }

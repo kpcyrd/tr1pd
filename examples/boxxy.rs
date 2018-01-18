@@ -10,7 +10,7 @@ fn stage1(_args: Vec<String>) -> Result<(), boxxy::Error> {
 }
 
 fn main() {
-    env_logger::init().unwrap();
+    env_logger::init();
 
     println!("stage1        activate sandbox stage1/1");
 

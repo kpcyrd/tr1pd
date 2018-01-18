@@ -35,7 +35,7 @@ fn load_keypair(pk: &str, sk: &str) -> Option<(PublicKey, SecretKey)> {
 }
 
 fn main() {
-    env_logger::init().unwrap();
+    env_logger::init();
 
     sandbox::activate_stage1().expect("sandbox stage1");
 

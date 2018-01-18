@@ -1,31 +1,30 @@
 use config::Config;
 
-#[cfg(target_os="openbsd")]
-use pledge::{pledge, Promise, ToPromiseString};
-
 mod errors {
     #[cfg(target_os="linux")]
-    use sandbox::seccomp;
+    use sandbox::capabilities;
     use sandbox::chroot;
-
+    #[cfg(target_os="openbsd")]
+    use sandbox::pledge;
     #[cfg(target_os="linux")]
-    error_chain! {
-        links {
-            Seccomp(seccomp::Error, seccomp::ErrorKind);
-            Chroot(chroot::Error, chroot::ErrorKind);
-        }
-    }
+    use sandbox::seccomp;
 
-    #[cfg(not(target_os="linux"))]
     error_chain! {
         links {
+            Capabilities(capabilities::Error, capabilities::ErrorKind)  #[cfg(target_os="linux")];
             Chroot(chroot::Error, chroot::ErrorKind);
+            Pledge(pledge::Error, pledge::ErrorKind) #[cfg(target_os="openbsd")];
+            Seccomp(seccomp::Error, seccomp::ErrorKind) #[cfg(target_os="linux")];
         }
     }
 }
 pub use self::errors::{Result, Error, ErrorKind};
 
+#[cfg(target_os="linux")]
+pub mod capabilities;
 pub mod chroot;
+#[cfg(target_os="openbsd")]
+pub mod pledge;
 #[cfg(target_os="linux")]
 pub mod seccomp;
 #[cfg(target_os="linux")]
@@ -37,49 +36,24 @@ pub fn activate_stage1() -> Result<()> {
     seccomp::activate_stage1()?;
 
     #[cfg(target_os="openbsd")]
-    {
-        info!("calling pledge");
-        match pledge![Stdio, RPath, WPath, CPath, Dns, Unix, Fattr, Inet] {
-            Err(_) => panic!("failed to pledge"),
-            _ => (),
-        };
-    }
+    pledge::activate_stage1()?;
 
     info!("stage 1/2 is active");
 
     Ok(())
 }
 
-pub fn activate_stage2(config: &mut Config) -> Result<()> {
-    if chroot::can_chroot()? {
-        {
-            let target = config.datadir();
-            debug!("chroot: -> {:?}", target);
-            chroot::chroot(target)?;
-        }
-        config.set_datadir(Some("/"));
+pub fn activate_stage2(mut config: &mut Config) -> Result<()> {
+    chroot::lock_to_datadir(&mut config)?;
 
-        // XXX: it's currently not recommended to use chroot
-        // on a platform that isn't linux since we don't have
-        // capabilities(7) there and there's no setuid code yet.
-
-        #[cfg(target_os="linux")]
-        chroot::drop_caps()?;
-    } else if config.security.strict_chroot {
-        panic!("strict-chroot is set and process didn't chroot");
-    }
+    #[cfg(target_os="linux")]
+    capabilities::drop()?;
 
     #[cfg(target_os="linux")]
     seccomp::activate_tr1pd_stage2()?;
 
     #[cfg(target_os="openbsd")]
-    {
-        info!("calling pledge");
-        match pledge![Stdio, RPath, WPath, CPath, Inet] {
-            Err(_) => panic!("failed to pledge"),
-            _ => (),
-        };
-    }
+    pledge::activate_tr1pd_stage2()?;
 
     info!("stage 2/2 is active");
 
