@@ -64,6 +64,9 @@ pub enum Syscall {
     capset              = libc::SYS_capset              as isize,
     chroot              = libc::SYS_chroot              as isize,
     chdir               = libc::SYS_chdir               as isize,
+    fcntl               = libc::SYS_fcntl               as isize,
+    brk                 = libc::SYS_brk                 as isize,
+    rt_sigprocmask      = libc::SYS_rt_sigprocmask      as isize,
 }
 
 impl Syscall {
