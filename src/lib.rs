@@ -4,7 +4,7 @@ extern crate sodiumoxide;
 extern crate sha3;
 extern crate clap;
 extern crate serde_json;
-extern crate scaproust;
+extern crate zmq;
 extern crate toml;
 extern crate human_size;
 extern crate libc;

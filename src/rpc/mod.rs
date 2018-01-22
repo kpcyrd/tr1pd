@@ -1,4 +1,4 @@
-use scaproust::{self, SessionBuilder, Session, Ipc, Req, Rep};
+use zmq;
 use serde_json;
 
 use std::str;
@@ -12,6 +12,7 @@ mod errors {
     use std::io;
     use std::str;
     use serde_json;
+    use zmq;
 
     use rpc::CtlResponse;
 
@@ -27,6 +28,7 @@ mod errors {
             Io(io::Error);
             Json(serde_json::Error);
             Utf8(str::Utf8Error);
+            Zmq(zmq::Error);
         }
     }
 }
@@ -46,24 +48,18 @@ pub enum CtlResponse {
     Nack,
 }
 
-pub fn create_session() -> Session {
-    SessionBuilder::new()
-        .with("ipc", Ipc)
-        .build().unwrap()
-}
-
 pub struct Server {
     #[allow(dead_code)]
-    session: scaproust::Session,
-    socket: scaproust::Socket,
+    ctx: zmq::Context,
+    socket: zmq::Socket,
 }
 
 impl Server {
     pub fn bind(url: &str) -> Result<Server> {
-        let mut session = create_session();
-        let mut socket = session.create_socket::<Rep>()?;
+        let ctx = zmq::Context::new();
+        let socket = ctx.socket(zmq::REP)?;
 
-        socket.bind(&url)?;
+        socket.bind(url)?;
 
         // fix permissions
         if url.starts_with("ipc://") {
@@ -73,13 +69,13 @@ impl Server {
         }
 
         Ok(Server {
-            session,
+            ctx,
             socket,
         })
     }
 
     pub fn recv(&mut self) -> Result<CtlRequest> {
-        let req = self.socket.recv()?;
+        let req = self.socket.recv_msg(0)?;
         debug!("ctl(req, raw): {:?}", req);
         let string = str::from_utf8(&req)?;
         let request = serde_json::from_str(string)?;
@@ -90,8 +86,7 @@ impl Server {
     pub fn reply(&mut self, reply: CtlResponse) -> Result<()> {
         debug!("ctl(resp): {:?}", reply);
         let response = serde_json::to_string(&reply)?;
-        let buffer = response.as_bytes().to_vec();
-        self.socket.send(buffer)?;
+        self.socket.send(response.as_bytes(), 0)?;
         Ok(())
     }
 }
@@ -108,13 +103,13 @@ impl ClientBuilder {
     }
 
     pub fn connect(&self) -> Result<Client> {
-        let mut session = create_session();
-        let mut socket = session.create_socket::<Req>()?;
+        let ctx = zmq::Context::new();
+        let socket = ctx.socket(zmq::REQ)?;
 
         socket.connect(&self.url)?;
 
         Ok(Client {
-            session,
+            ctx,
             socket,
         })
     }
@@ -122,16 +117,16 @@ impl ClientBuilder {
 
 pub struct Client {
     #[allow(dead_code)]
-    session: scaproust::Session,
-    socket: scaproust::Socket,
+    ctx: zmq::Context,
+    socket: zmq::Socket,
 }
 
 impl Client {
     pub fn send(&mut self, req: &CtlRequest) -> Result<CtlResponse> {
         debug!("ctl(req): {:?}", req);
         let request = serde_json::to_string(req)?;
-        self.socket.send(request.as_bytes().to_vec())?;
-        let buffer = self.socket.recv()?;
+        self.socket.send(request.as_bytes(), 0)?;
+        let buffer = self.socket.recv_msg(0)?;
 
         let string = str::from_utf8(&buffer)?;
         let reply = serde_json::from_str(&string)?;

@@ -36,7 +36,7 @@ env_logger = "0.5"
 colored = "1.6"
 human-size = "0.2"
 
-scaproust = "0.3.2"
+zmq = "0.8.2"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
