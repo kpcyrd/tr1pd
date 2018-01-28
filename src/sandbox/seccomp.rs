@@ -91,6 +91,9 @@ pub fn activate_stage1() -> Result<()> {
     ctx.allow_syscall(Syscall::symlinkat)?;
     ctx.allow_syscall(Syscall::getdents)?;
     ctx.allow_syscall(Syscall::getpid)?;
+    ctx.allow_syscall(Syscall::getuid)?;
+    ctx.allow_syscall(Syscall::readv)?;
+    ctx.allow_syscall(Syscall::lseek)?;
     ctx.allow_syscall(Syscall::eventfd2)?;
     ctx.allow_syscall(Syscall::sched_getparam)?;
     ctx.allow_syscall(Syscall::sched_getscheduler)?;
