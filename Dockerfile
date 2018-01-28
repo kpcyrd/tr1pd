@@ -1,6 +1,6 @@
 FROM rust:latest
 RUN apt-get -q update \
-    && apt-get install -qy libsodium-dev libseccomp-dev
+    && apt-get install -qy libsodium-dev libseccomp-dev libzmq3-dev
 WORKDIR /app
 COPY . .
 RUN cargo build --release --verbose
