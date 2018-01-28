@@ -1,0 +1,9 @@
+# /etc/conf.d/tr1pd: config file for /etc/init.d/tr1pd
+
+# Arguments you want to pass to tr1pd.
+
+TR1PD_OPTS=""
+
+# Disable initial key generation with tr1pctl init
+
+#TR1PD_DISABLE_KEYGEN="no"
