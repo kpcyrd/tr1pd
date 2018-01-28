@@ -11,6 +11,7 @@ COPY --from=0 /lib/x86_64-linux-gnu/libdl.so.2 \
               /lib/x86_64-linux-gnu/libseccomp.so.2 \
               /lib/x86_64-linux-gnu/
 COPY --from=0 /usr/lib/x86_64-linux-gnu/libsodium.so.18 \
+              /usr/lib/x86_64-linux-gnu/libzmq.so.5 \
               /usr/lib/x86_64-linux-gnu/
 COPY contrib/docker-entry.sh /docker-entry.sh
 COPY --from=0 /app/target/release/tr1pd /app/target/release/tr1pctl /usr/local/bin/
