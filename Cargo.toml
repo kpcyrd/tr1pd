@@ -44,8 +44,8 @@ toml = "0.4"
 
 [target.'cfg(target_os="linux")'.dependencies]
 seccomp-sys = "0.1.2"
-caps = "0.1.0"
+caps = "0.2"
 
 [dev-dependencies]
 pseudo = "0.0.3"
-boxxy = "0.3"
+boxxy = "0.4"
