@@ -1,0 +1,58 @@
+#!/sbin/openrc-run
+
+description="tr1pd tamper resistant audit log"
+description_checkconfig="Verify configuration file"
+
+extra_commands="checkconfig"
+
+: ${TR1PD_PIDFILE:=/run/${SVCNAME}.pid}
+: ${TR1PD_BINARY:=/usr/bin/tr1pd}
+
+depend() {
+	need net
+	after firewall
+}
+
+checkconfig() {
+	if [ ! -d /etc/tr1pd ] ; then
+		mkdir -pm 750 /etc/tr1pd || return 1
+		chown tr1pd. /etc/tr1pd || return 1
+	fi
+
+	if ! yesno "${TR1PD_DISABLE_KEYGEN}"; then
+		tr1pctl init || return 1
+		chown tr1pd. /etc/tr1pd/lt.pk /etc/tr1pd/lt.sk || return 1
+	fi
+
+	if [ ! -d /var/lib/tr1pd ] ; then
+		mkdir -pm 750 /var/lib/tr1pd || return 1
+		chown tr1pd. /var/lib/tr1pd || return 1
+	fi
+
+	if [ ! -d /run/tr1pd ] ; then
+		mkdir -pm 750 /run/tr1pd || return 1
+		chown tr1pd. /run/tr1pd || return 1
+	fi
+}
+
+start() {
+	checkconfig || return 1
+
+	ebegin "Starting ${SVCNAME}"
+	start-stop-daemon --start --exec "${TR1PD_BINARY}" \
+		--make-pidfile \
+		--pidfile "${TR1PD_PIDFILE}" \
+		--user tr1pd:tr1pd \
+		--background \
+		-- ${TR1PD_OPTS}
+	eend $?
+}
+
+stop() {
+	checkconfig || return 1
+
+	ebegin "Stopping ${SVCNAME}"
+	start-stop-daemon --stop --quiet \
+		--pidfile "${TR1PD_PIDFILE}"
+	eend $?
+}
