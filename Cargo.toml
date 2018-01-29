@@ -36,7 +36,7 @@ env_logger = "0.5"
 colored = "1.6"
 human-size = "0.2"
 
-scaproust = "0.3.2"
+zmq = "0.8.2"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
@@ -44,8 +44,8 @@ toml = "0.4"
 
 [target.'cfg(target_os="linux")'.dependencies]
 seccomp-sys = "0.1.2"
-caps = "0.1.0"
+caps = "0.2"
 
 [dev-dependencies]
 pseudo = "0.0.3"
-boxxy = "0.3"
+boxxy = "0.4"

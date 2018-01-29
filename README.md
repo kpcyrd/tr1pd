@@ -25,10 +25,10 @@ tr1pd is a tamper resistant audit log.
 ## Installation
 
 Make sure you have the following dependencies installed:
-Debian/Ubuntu: `libsodium-dev libseccomp-dev`,
-Archlinux: `libsodium libseccomp`,
-Alpine: `make libsodium-dev libseccomp-dev`,
-OpenBSD: `libsodium`.
+Debian/Ubuntu: `libsodium-dev libseccomp-dev libzmq3-dev`,
+Archlinux: `libsodium libseccomp zeromq`,
+Alpine: `make libsodium-dev libseccomp-dev zeromq-dev`,
+OpenBSD: `libsodium zeromq`.
 
     cargo install tr1pd
 
@@ -60,8 +60,8 @@ seperate terminal. Verify everything is working correctly by executing
 
 Sensors can be written in any language using stdio. `tr1pctl write` is a simple
 line based interface that writes each line into a block. You can also enable
-binary mode with `tr1pctl -s 65535`. To monitor your auth.log you can simply
-write:
+binary mode with `tr1pctl write -s 65535`. To monitor your auth.log you can
+simply write:
 
     tail -f /var/log/auth.log | tr1pctl write
 

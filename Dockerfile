@@ -1,6 +1,6 @@
 FROM rust:latest
 RUN apt-get -q update \
-    && apt-get install -qy libsodium-dev libseccomp-dev
+    && apt-get install -qy libsodium-dev libseccomp-dev libzmq3-dev
 WORKDIR /app
 COPY . .
 RUN cargo build --release --verbose
@@ -11,6 +11,9 @@ COPY --from=0 /lib/x86_64-linux-gnu/libdl.so.2 \
               /lib/x86_64-linux-gnu/libseccomp.so.2 \
               /lib/x86_64-linux-gnu/
 COPY --from=0 /usr/lib/x86_64-linux-gnu/libsodium.so.18 \
+              /usr/lib/x86_64-linux-gnu/libzmq.so.5 \
+              /usr/lib/x86_64-linux-gnu/libpgm-5.2.so.0 \
+              /usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
               /usr/lib/x86_64-linux-gnu/
 COPY contrib/docker-entry.sh /docker-entry.sh
 COPY --from=0 /app/target/release/tr1pd /app/target/release/tr1pctl /usr/local/bin/
