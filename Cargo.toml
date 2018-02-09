@@ -6,6 +6,7 @@ authors = ["kpcyrd <git@rxv.cc>"]
 license = "AGPL-3.0"
 repository = "https://github.com/kpcyrd/tr1pd"
 categories = ["command-line-utilities"]
+readme = "README.md"
 
 [[bin]]
 name = "tr1pd"
