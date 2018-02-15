@@ -1,9 +1,11 @@
-# tr1pd [![Build Status][travis-img]][travis] [![Crates.io][crates-img]][crates]
+# tr1pd [![Build Status][travis-img]][travis] [![Crates.io][crates-img]][crates] [![docs.rs][docs-img]][docs]
 
 [travis-img]:   https://travis-ci.org/kpcyrd/tr1pd.svg?branch=master
 [travis]:       https://travis-ci.org/kpcyrd/tr1pd
 [crates-img]:   https://img.shields.io/crates/v/tr1pd.svg
 [crates]:       https://crates.io/crates/tr1pd
+[docs-img]:     https://docs.rs/tr1pd/badge.svg
+[docs]:         https://docs.rs/tr1pd
 
 **Status: Very unstable, do not use**
 
