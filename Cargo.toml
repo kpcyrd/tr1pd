@@ -1,6 +1,6 @@
 [package]
 name = "tr1pd"
-version = "0.3.0"
+version = "0.3.1"
 description = "tamper resistant audit log"
 authors = ["kpcyrd <git@rxv.cc>"]
 license = "AGPL-3.0"
