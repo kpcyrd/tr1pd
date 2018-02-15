@@ -81,6 +81,8 @@ pub enum Syscall {
     chdir               = libc::SYS_chdir               as isize,
     fcntl               = libc::SYS_fcntl               as isize,
     brk                 = libc::SYS_brk                 as isize,
+    clock_gettime       = libc::SYS_clock_gettime       as isize,
+    gettimeofday        = libc::SYS_gettimeofday        as isize,
     rt_sigprocmask      = libc::SYS_rt_sigprocmask      as isize,
 }
 
