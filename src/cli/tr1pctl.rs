@@ -7,6 +7,7 @@ pub fn build_cli() -> App<'static, 'static> {
     App::new("tr1pctl")
         .settings(&[AppSettings::SubcommandRequiredElseHelp, AppSettings::ColoredHelp])
         .setting(AppSettings::VersionlessSubcommands)
+        .version(env!("CARGO_PKG_VERSION"))
         .arg(common::socket())
         .arg(common::data_dir())
         .subcommand(SubCommand::with_name("init")
