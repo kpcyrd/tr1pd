@@ -89,7 +89,10 @@ pub fn activate_stage1() -> Result<()> {
     #[cfg(not(target_arch = "aarch64"))]
     ctx.allow_syscall(Syscall::symlink)?;
     ctx.allow_syscall(Syscall::symlinkat)?;
+    #[cfg(not(target_arch = "aarch64"))]
     ctx.allow_syscall(Syscall::getdents)?;
+    #[cfg(target_arch = "aarch64")]
+    ctx.allow_syscall(Syscall::getdents64)?;
     ctx.allow_syscall(Syscall::getpid)?;
     ctx.allow_syscall(Syscall::getuid)?;
     ctx.allow_syscall(Syscall::readv)?;
@@ -98,7 +101,10 @@ pub fn activate_stage1() -> Result<()> {
     ctx.allow_syscall(Syscall::sched_getparam)?;
     ctx.allow_syscall(Syscall::sched_getscheduler)?;
     ctx.allow_syscall(Syscall::sched_setscheduler)?;
+    #[cfg(not(target_arch = "aarch64"))]
     ctx.allow_syscall(Syscall::poll)?;
+    #[cfg(target_arch = "aarch64")]
+    ctx.allow_syscall(Syscall::ppoll)?;
     ctx.allow_syscall(Syscall::getsockname)?;
     ctx.allow_syscall(Syscall::getsockopt)?;
     ctx.allow_syscall(Syscall::getpeername)?;
@@ -186,7 +192,10 @@ pub fn activate_tr1pd_stage2() -> Result<()> {
     ctx.allow_syscall(Syscall::getpeername)?;
     ctx.allow_syscall(Syscall::eventfd2)?;
     ctx.allow_syscall(Syscall::getpid)?;
+    #[cfg(not(target_arch = "aarch64"))]
     ctx.allow_syscall(Syscall::poll)?;
+    #[cfg(target_arch = "aarch64")]
+    ctx.allow_syscall(Syscall::ppoll)?;
     ctx.allow_syscall(Syscall::sendto)?;
     ctx.allow_syscall(Syscall::clone)?;
     ctx.allow_syscall(Syscall::set_robust_list)?;

@@ -12,7 +12,10 @@ pub enum Syscall {
     lstat               = libc::SYS_lstat               as isize,
     fstat               = libc::SYS_fstat               as isize,
     newfstatat          = libc::SYS_newfstatat          as isize,
+    #[cfg(not(target_arch = "aarch64"))]
     getdents            = libc::SYS_getdents            as isize,
+    #[cfg(target_arch = "aarch64")]
+    getdents64          = libc::SYS_getdents64          as isize,
     getpid              = libc::SYS_getpid              as isize,
     getuid              = libc::SYS_getuid              as isize,
     readv               = libc::SYS_readv               as isize,
@@ -24,7 +27,10 @@ pub enum Syscall {
     getsockname         = libc::SYS_getsockname         as isize,
     getsockopt          = libc::SYS_getsockopt          as isize,
     getpeername         = libc::SYS_getpeername         as isize,
+    #[cfg(not(target_arch = "aarch64"))]
     poll                = libc::SYS_poll                as isize,
+    #[cfg(target_arch = "aarch64")]
+    ppoll               = libc::SYS_ppoll                as isize,
     sendto              = libc::SYS_sendto              as isize,
     mmap                = libc::SYS_mmap                as isize,
     mprotect            = libc::SYS_mprotect            as isize,
