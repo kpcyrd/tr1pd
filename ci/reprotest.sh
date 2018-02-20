@@ -10,4 +10,4 @@ reprotest -vv --vary=-time,-domain_host --source-pattern 'Cargo.* src/' '
     RUSTC_BOOTSTRAP=1 CARGO_HOME="$PWD/.cargo" RUSTUP_HOME='"$HOME/.rustup"' \
         RUSTFLAGS="-Zremap-path-prefix-from=$HOME -Zremap-path-prefix-to=/remap-home -Zremap-path-prefix-from=$PWD -Zremap-path-prefix-to=/remap-pwd" \
         cargo build --release --verbose' \
-    'target/release/tr1p{d,ctl}'
+    'target/release/tr1pd target/release/tr1pctl'
