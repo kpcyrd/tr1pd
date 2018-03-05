@@ -35,7 +35,7 @@ pledge = "0.3.1"
 log = "0.4"
 env_logger = "0.5"
 colored = "1.6"
-human-size = "0.2"
+human-size = "0.3"
 
 zmq = "0.8.2"
 serde = "1.0"

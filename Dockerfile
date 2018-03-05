@@ -3,7 +3,8 @@ RUN apt-get -q update \
     && apt-get install -qy libsodium-dev libseccomp-dev libzmq3-dev
 WORKDIR /app
 COPY . .
-RUN cargo build --release --verbose
+RUN cargo build --release --verbose \
+    && strip target/release/tr1pd target/release/tr1pctl
 FROM busybox:1-glibc
 COPY --from=0 /lib/x86_64-linux-gnu/libdl.so.2 \
               /lib/x86_64-linux-gnu/librt.so.1 \

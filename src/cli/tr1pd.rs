@@ -6,6 +6,7 @@ use cli::common;
 pub fn build_cli() -> App<'static, 'static> {
     App::new("tr1pd")
         .setting(AppSettings::ColoredHelp)
+        .version(env!("CARGO_PKG_VERSION"))
         .subcommand(SubCommand::with_name("bash-completion")
             .about("Generate bash completion script for the tr1pd command.")
         )
