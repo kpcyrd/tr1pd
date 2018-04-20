@@ -49,7 +49,7 @@ pub fn to_privkey(sk: &[u8]) -> Result<SecretKey> {
 
 
 pub trait Signable {
-    fn encode(&self) -> Vec<u8>;
+    fn encode(&self, buf: &mut Vec<u8>);
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -69,14 +69,13 @@ impl<T: Signable> Signed<T> {
         Signed(inner, signature)
     }
 
-    pub fn encode(&self) -> Vec<u8> {
-        let mut buf = self.encode_inner();
+    pub fn encode(&self, buf: &mut Vec<u8>) {
+        self.encode_inner(buf);
         buf.extend(self.signature().0.iter());
-        buf
     }
 
-    fn encode_inner(&self) -> Vec<u8> {
-        self.0.encode()
+    fn encode_inner(&self, buf: &mut Vec<u8>) {
+        self.0.encode(buf);
     }
 
     pub fn inner(&self) -> &T {
@@ -88,7 +87,9 @@ impl<T: Signable> Signed<T> {
     }
 
     pub fn verify_session(&self, pubkey: &PublicKey) -> Result<()> {
-        verify(&self.1, &self.0.encode(), pubkey)
+        let mut buf = Vec::new();
+        self.0.encode(&mut buf);
+        verify(&self.1, &buf, pubkey)
     }
 }
 

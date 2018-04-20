@@ -153,7 +153,9 @@ impl Block {
     /// Sign an inner block with the long-term key.
     #[inline]
     fn sign(inner: InnerBlock, keyring: &SignRing) -> Result<Block> {
-        let buf = inner.encode();
+        let mut buf = Vec::new();
+        inner.encode(&mut buf);
+
         let signature = keyring.sign_longterm(&buf);
 
         Ok(Block {
@@ -165,7 +167,10 @@ impl Block {
     /// Verify the long-term signature of the outer block.
     #[inline]
     pub fn verify_longterm(&self, pubkey: &PublicKey) -> Result<()> {
-        crypto::verify(&self.signature, &self.inner.encode(), pubkey)?;
+        let mut buf = Vec::new();
+        self.inner.encode(&mut buf);
+
+        crypto::verify(&self.signature, &buf, pubkey)?;
         Ok(())
     }
 
@@ -183,7 +188,9 @@ impl Block {
     /// [`Block::sha3`]: #method.sha3
     #[inline]
     pub fn sha3_encode(&self) -> (BlockPointer, Vec<u8>) {
-        let bytes = self.encode();
+        let mut bytes = Vec::new();
+        self.encode(&mut bytes);
+
         let sha3 = Sha3_256::digest(&bytes);
         let pointer = BlockPointer::from_slice(sha3.as_slice()).unwrap();
         (pointer, bytes)
@@ -236,11 +243,9 @@ impl Block {
     /// [`Block::sha3_encode`]: #method.sha3_encode
     /// [`BlockPointer`]: struct.BlockPointer.html
     #[inline]
-    pub fn encode(&self) -> Vec<u8> {
-        let mut buf: Vec<u8> = Vec::new();
-        buf.extend(self.inner.encode());
+    pub fn encode(&self, buf: &mut Vec<u8>) {
+        self.inner.encode(buf);
         buf.extend(self.signature.0.iter());
-        buf
     }
 
     /// Return the pointer to the parent block.
@@ -327,12 +332,12 @@ impl InnerBlock {
         }
     }
 
-    fn encode(&self) -> Vec<u8> {
+    fn encode(&self, buf: &mut Vec<u8>) {
         match *self {
-            InnerBlock::Init(ref inner)  => inner.encode(),
-            InnerBlock::Rekey(ref inner) => inner.encode(),
-            InnerBlock::Alert(ref inner) => inner.encode(),
-            InnerBlock::Info(ref inner)  => inner.encode(),
+            InnerBlock::Init(ref inner)  => inner.encode(buf),
+            InnerBlock::Rekey(ref inner) => inner.encode(buf),
+            InnerBlock::Alert(ref inner) => inner.encode(buf),
+            InnerBlock::Info(ref inner)  => inner.encode(buf),
         }
     }
 }
@@ -370,12 +375,10 @@ impl InitBlock {
 }
 
 impl Signable for InitBlock {
-    fn encode(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
+    fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(self.prev.0.iter());
         buf.extend(BlockIdentifier::Init.to_vec());
         buf.extend(self.pubkey.0.iter());
-        buf
     }
 }
 
@@ -412,12 +415,10 @@ impl RekeyBlock {
 }
 
 impl Signable for RekeyBlock {
-    fn encode(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
+    fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(self.prev.0.iter());
         buf.extend(BlockIdentifier::Rekey.to_vec());
         buf.extend(self.pubkey.0.iter());
-        buf
     }
 }
 
@@ -465,14 +466,12 @@ impl AlertBlock {
 }
 
 impl Signable for AlertBlock {
-    fn encode(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
+    fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(self.prev.0.iter());
         buf.extend(BlockIdentifier::Alert.to_vec());
         buf.extend(self.pubkey.0.iter());
         buf.extend(len_to_u16_vec(self.bytes.len()).expect("block len overflow").iter());
         buf.extend(&self.bytes);
-        buf
     }
 }
 
@@ -488,7 +487,10 @@ impl InfoBlock {
             prev,
             bytes,
         };
-        let signature = keyring.sign_session(&block.encode());
+        let mut buf = Vec::new();
+        block.encode(&mut buf);
+
+        let signature = keyring.sign_session(&buf);
 
         Signed(block, signature)
     }
@@ -515,12 +517,10 @@ impl InfoBlock {
 }
 
 impl Signable for InfoBlock {
-    fn encode(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
+    fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(self.prev.0.iter());
         buf.extend(BlockIdentifier::Info.to_vec());
         buf.extend(len_to_u16_vec(self.bytes.len()).expect("block len overflow").iter());
         buf.extend(&self.bytes);
-        buf
     }
 }

@@ -170,7 +170,10 @@ fn init_bytes() {
     );
 
     let expected = bytes2vec(&expected);
-    assert_eq!(expected, block.encode());
+    let mut bytes = Vec::new();
+    block.encode(&mut bytes);
+
+    assert_eq!(expected, bytes);
 }
 
 #[test]
@@ -257,7 +260,10 @@ fn rekey_bytes() {
     );
 
     let expected = bytes2vec(&expected);
-    assert_eq!(expected, block.encode());
+    let mut bytes = Vec::new();
+    block.encode(&mut bytes);
+
+    assert_eq!(expected, bytes);
 }
 
 #[test]
@@ -348,7 +354,10 @@ fn alert_bytes() {
     );
 
     let expected = bytes2vec(&expected);
-    assert_eq!(expected, block.encode());
+    let mut bytes = Vec::new();
+    block.encode(&mut bytes);
+
+    assert_eq!(expected, bytes);
 }
 
 #[test]
@@ -428,7 +437,10 @@ fn info_bytes() {
     );
 
     let expected = bytes2vec(&expected);
-    assert_eq!(expected, block.encode());
+    let mut bytes = Vec::new();
+    block.encode(&mut bytes);
+
+    assert_eq!(expected, bytes);
 }
 
 use engine::Engine;
