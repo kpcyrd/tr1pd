@@ -24,7 +24,7 @@ travis-ci = { repository = "kpcyrd/tr1pd" }
 
 [dependencies]
 nom = "3.2"
-clap = "2"
+structopt = "0.2"
 error-chain = "0.11"
 sodiumoxide = "0.0.16"
 sha3 = "0.7"

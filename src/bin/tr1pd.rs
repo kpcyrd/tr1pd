@@ -6,7 +6,6 @@ extern crate env_logger;
 use tr1pd::storage::DiskStorage;
 use tr1pd::engine::Engine;
 use tr1pd::cli;
-use tr1pd::cli::tr1pd::build_cli;
 use tr1pd::config;
 use tr1pd::crypto::{SignRing, PublicKey, SecretKey};
 use tr1pd::sandbox;
@@ -39,18 +38,20 @@ fn main() {
 
     sandbox::activate_stage1().expect("sandbox stage1");
 
-    let matches = build_cli()
-        .get_matches();
+    let args = cli::tr1pd::parse();
 
-    if matches.is_present("bash-completion") {
-        cli::gen_completions(build_cli(), "tr1pd");
-        return;
+    match args.subcommand {
+        Some(cli::tr1pd::SubCommand::BashCompletion) => {
+            cli::gen_completions::<cli::tr1pd::Args>("tr1pd");
+            return;
+        }
+        _ => (),
     }
 
     let mut config = config::load_config();
 
-    config.set_socket(matches.value_of("socket"));
-    config.set_datadir(matches.value_of("data-dir"));
+    config.set_socket(args.socket);
+    config.set_datadir(args.data_dir);
 
     let (pk, sk) = {
         let (pk, sk) = (config.pub_key(), config.sec_key());

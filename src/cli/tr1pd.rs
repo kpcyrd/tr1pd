@@ -1,19 +1,34 @@
-use clap::{App, SubCommand, Arg, AppSettings};
+use structopt::StructOpt;
+use structopt::clap::AppSettings;
 
-use cli::common;
 
-#[inline]
-pub fn build_cli() -> App<'static, 'static> {
-    App::new("tr1pd")
-        .setting(AppSettings::ColoredHelp)
-        .version(env!("CARGO_PKG_VERSION"))
-        .subcommand(SubCommand::with_name("bash-completion")
-            .about("Generate bash completion script for the tr1pd command.")
-        )
-        .arg(common::socket())
-        .arg(common::data_dir())
-        .arg(Arg::with_name("unprivileged")
-            .help("Reserved for internal usage")
-            .long("unprivileged")
-        )
+#[derive(StructOpt, Debug)]
+#[structopt(author = "",
+            raw(global_settings = "&[AppSettings::ColoredHelp, AppSettings::VersionlessSubcommands]"))]
+pub struct Args {
+    #[structopt(short = "S",
+                long = "socket",
+                env = "TR1PD_SOCKET")]
+    pub socket: Option<String>,
+    #[structopt(short = "D",
+                long = "data-dir",
+                env = "TR1PD_DATADIR")]
+    pub data_dir: Option<String>,
+    #[structopt(long = "unprivileged",
+                help = "Reserved for internal usage")]
+    pub unprivileged: bool,
+    #[structopt(subcommand)]
+    pub subcommand: Option<SubCommand>,
+}
+
+#[derive(StructOpt, Debug)]
+pub enum SubCommand {
+    #[structopt(author = "",
+                name = "bash-completion",
+                about = "Generate bash completion script for the tr1pd command.")]
+    BashCompletion,
+}
+
+pub fn parse() -> Args {
+    Args::from_args()
 }

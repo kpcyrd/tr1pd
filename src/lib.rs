@@ -2,7 +2,7 @@
 
 extern crate sodiumoxide;
 extern crate sha3;
-extern crate clap;
+#[macro_use] extern crate structopt;
 extern crate zmq;
 extern crate toml;
 extern crate human_size;
