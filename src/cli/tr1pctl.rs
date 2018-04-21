@@ -2,6 +2,7 @@ use structopt::StructOpt;
 use structopt::clap::AppSettings;
 
 use recipe;
+use spec::{Spec, SpecPointer};
 
 
 #[derive(StructOpt, Debug)]
@@ -90,14 +91,17 @@ pub struct GetCmd {
                 long = "parent",
                 help = "Print the pointer to the parent")]
     pub parent: bool,
-    pub block: String,
+    #[structopt(parse(try_from_str = "SpecPointer::parse"),
+                help = "The block to select")]
+    pub block: SpecPointer,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct LsCmd {
     #[structopt(default_value = "..",
+                parse(try_from_str = "Spec::parse_range"),
                 help = "Specify range to verify")]
-    pub spec: String,
+    pub spec: (SpecPointer, SpecPointer),
 }
 
 #[derive(StructOpt, Debug)]
@@ -125,8 +129,9 @@ pub struct FromCmd {
 #[derive(StructOpt, Debug)]
 pub struct FsckCmd {
     #[structopt(default_value = "..",
+                parse(try_from_str = "Spec::parse_range"),
                 help = "Specify range to verify")]
-    pub spec: String,
+    pub spec: (SpecPointer, SpecPointer),
     #[structopt(short = "v",
                 help = "Verbose output")]
     pub verbose: bool,

@@ -9,11 +9,9 @@ use colored::Colorize;
 
 use tr1pd::blocks::InnerBlock;
 use tr1pd::cli;
-// use tr1pd::cli::tr1pctl::build_cli;
 use tr1pd::config;
 use tr1pd::crypto::{self, PublicKey};
 use tr1pd::sandbox;
-use tr1pd::spec::{Spec, SpecPointer};
 use tr1pd::storage::{DiskStorage, BlockStorage};
 use tr1pd::recipe::{BlockRecipe, InfoBlockPipe};
 use tr1pd::rpc::{ClientBuilder, CtlRequest};
@@ -96,8 +94,7 @@ fn main() {
         SubCommand::Get(matches) => {
             let longterm_pk = load_pubkey(config.pub_key()).unwrap();
 
-            let spec = SpecPointer::parse(&matches.block).expect("failed to parse spec");
-            let pointer = storage.resolve_pointer(spec).expect("failed to resolve pointer");
+            let pointer = storage.resolve_pointer(matches.block).expect("failed to resolve pointer");
             let block = storage.get(&pointer).expect("failed to load block");
 
             block.verify_longterm(&longterm_pk).expect("verify_longterm");
@@ -120,8 +117,7 @@ fn main() {
         SubCommand::Ls(matches) => {
             let longterm_pk = load_pubkey(config.pub_key()).unwrap();
 
-            let spec = Spec::parse_range(&matches.spec).expect("failed to parse spec");
-            let range = storage.resolve_range(spec).expect("failed to expand range");
+            let range = storage.resolve_range(matches.spec).expect("failed to expand range");
 
             for pointer in storage.expand_range(range).unwrap() {
                 let block = storage.get(&pointer).unwrap();
@@ -186,8 +182,7 @@ fn main() {
 
             let paranoid = matches.paranoid;
 
-            let spec = Spec::parse_range(&matches.spec).expect("failed to parse spec");
-            let range = storage.resolve_range(spec).expect("failed to expand range");
+            let range = storage.resolve_range(matches.spec).expect("failed to expand range");
 
             let mut session = None;
 
