@@ -45,9 +45,9 @@ pub fn len_to_u16_vec(i: usize) -> Result<[u8; 2]> {
     Ok(bytes)
 }
 
-named!(pointer<&[u8], BlockPointer>, map_res!(take!(32), BlockPointer::from_slice));
-named!(pubkey<&[u8], PublicKey>, map_opt!(take!(32), PublicKey::from_slice));
-named!(signature<&[u8], Signature>, map_opt!(take!(64), Signature::from_slice));
+named!(pub pointer<&[u8], BlockPointer>, map_res!(take!(32), BlockPointer::from_slice));
+named!(pub pubkey<&[u8], PublicKey>, map_opt!(take!(32), PublicKey::from_slice));
+named!(pub signature<&[u8], Signature>, map_opt!(take!(64), Signature::from_slice));
 
 fn inner(input: &[u8]) -> IResult<&[u8], InnerBlock> {
     do_parse!(input,

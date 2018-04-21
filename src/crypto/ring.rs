@@ -72,19 +72,28 @@ impl VerifyRing {
     }
 
     pub fn rekey(&mut self, block: &Signed<RekeyBlock>) -> Result<()> {
+        let mut buf = Vec::new();
+        block.encode_inner(&mut buf);
+
         self.internal_rekey(block.pubkey().clone(),
-                            &block.encode_inner(),
+                            &buf,
                             block.signature())
     }
 
     pub fn alert_rekey(&mut self, block: &Signed<AlertBlock>) -> Result<()> {
+        let mut buf = Vec::new();
+        block.encode_inner(&mut buf);
+
         self.internal_rekey(block.pubkey().clone(),
-                            &block.encode_inner(),
+                            &buf,
                             block.signature())
     }
 
     pub fn verify_block_session<T: Signable>(&mut self, block: &Signed<T>) -> Result<()> {
-        self.verify_session(&block.encode_inner(),
+        let mut buf = Vec::new();
+        block.encode_inner(&mut buf);
+
+        self.verify_session(&buf,
                             block.signature())
     }
 }
@@ -155,7 +164,7 @@ impl SignRing {
         let pubkey = self.start_rekey();
         let block = RekeyBlock::new(prev, pubkey);
 
-        let signature = self.finalize_rekey(&block.encode())
+        let signature = self.finalize_rekey(&block)
                                 .expect("start_rekey hasn't been called");
 
         Signed::new(block, signature)
@@ -165,7 +174,7 @@ impl SignRing {
         let pubkey = self.start_rekey();
         let block = AlertBlock::new(prev, pubkey, bytes);
 
-        let signature = self.finalize_rekey(&block.encode())
+        let signature = self.finalize_rekey(&block)
                                 .expect("start_rekey hasn't been called");
 
         Signed::new(block, signature)
@@ -175,7 +184,9 @@ impl SignRing {
         utils::memzero(x)
     }
 
-    fn finalize_rekey(&mut self, buf: &[u8]) -> Result<Signature> {
+    fn finalize_rekey<T: Signable>(&mut self, block: &T) -> Result<Signature> {
+        let mut buf = Vec::new();
+        block.encode(&mut buf);
         let signature = self.sign_session(&buf);
 
         match self.delayed_keypair.take() {

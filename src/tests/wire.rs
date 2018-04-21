@@ -40,7 +40,8 @@ fn parse_init_block() {
         ]).unwrap()
     );
 
-    let bytes = expected.encode();
+    let mut bytes = Vec::new();
+    expected.encode(&mut bytes);
     let block = block(&bytes);
     assert_eq!(block, IResult::Done(EMPTY_SLICE, expected));
 }
@@ -146,7 +147,8 @@ fn parse_rekey_block() {
         ]).unwrap()
     );
 
-    let bytes = expected.encode();
+    let mut bytes = Vec::new();
+    expected.encode(&mut bytes);
     let block = block(&bytes);
     assert_eq!(block, IResult::Done(EMPTY_SLICE, expected));
 }
@@ -273,7 +275,8 @@ fn parse_alert_block() {
         ]).unwrap()
     );
 
-    let bytes = expected.encode();
+    let mut bytes = Vec::new();
+    expected.encode(&mut bytes);
     let block = block(&bytes);
     assert_eq!(block, IResult::Done(EMPTY_SLICE, expected));
 }
@@ -397,7 +400,8 @@ fn parse_info_block() {
         ]).unwrap()
     );
 
-    let bytes = expected.encode();
+    let mut bytes = Vec::new();
+    expected.encode(&mut bytes);
     let block = block(&bytes);
     assert_eq!(block, IResult::Done(EMPTY_SLICE, expected));
 }
