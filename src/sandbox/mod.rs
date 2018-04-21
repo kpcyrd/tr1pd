@@ -18,7 +18,7 @@ mod errors {
         }
     }
 }
-pub use self::errors::{Result, Error, ErrorKind};
+pub use self::errors::{Result, ResultExt, Error, ErrorKind};
 
 #[cfg(target_os="linux")]
 pub mod capabilities;

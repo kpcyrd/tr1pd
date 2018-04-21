@@ -4,9 +4,12 @@ extern crate tr1pd;
 extern crate env_logger;
 extern crate nom;
 extern crate colored;
+extern crate error_chain;
+#[macro_use] extern crate log;
 
 use colored::Colorize;
 
+use tr1pd::{Result, ResultExt};
 use tr1pd::blocks::InnerBlock;
 use tr1pd::cli;
 use tr1pd::config;
@@ -24,22 +27,22 @@ use std::io::stdin;
 use std::io::prelude::*;
 use std::path::Path;
 use std::str;
-use std::process;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::os::unix::fs::OpenOptionsExt;
 use std::process::{Command, Stdio};
 
 
-fn load_pubkey(pk: &str) -> Result<PublicKey, ()> {
-    let mut file = File::open(pk).expect("create lt.pk");
+fn load_pubkey(pk: &str) -> Result<PublicKey> {
+    let mut file = File::open(pk)?;
     let mut buf = Vec::new();
-    file.read_to_end(&mut buf).unwrap();
-    let pk = PublicKey::from_slice(&buf).unwrap();
+    file.read_to_end(&mut buf)?;
+    let pk = PublicKey::from_slice(&buf)
+                .chain_err(|| "invalid public key")?;
     Ok(pk)
 }
 
-fn main() {
+fn run() -> Result<()> {
     env_logger::init();
 
     let args = cli::tr1pctl::parse();
@@ -49,7 +52,8 @@ fn main() {
         // since the new process would inherit our filter.
         // if that problem has been resolved, activate_stage1
         // should be moved below env_logger::init
-        sandbox::activate_stage1().expect("sandbox stage1");
+        sandbox::activate_stage1()
+            .chain_err(|| "sandbox stage1")?;
     }
 
     let config = config::load_config();
@@ -75,8 +79,8 @@ fn main() {
                                 .create(true)
                                 .create_new(!matches.force)
                                 .mode(0o640)
-                                .open(pk_path).expect("create lt.pk");
-                file.write_all(&pk.0).unwrap();
+                                .open(pk_path)?;
+                file.write_all(&pk.0)?;
                 println!("[+] wrote public key to {:?}", pk_path);
             }
 
@@ -86,13 +90,13 @@ fn main() {
                                 .create(true)
                                 .create_new(!matches.force)
                                 .mode(0o600)
-                                .open(sk_path).expect("create lt.sk");
-                file.write_all(&sk.0).unwrap();
+                                .open(sk_path)?;
+                file.write_all(&sk.0)?;
                 println!("[+] wrote secret key to {:?}", sk_path);
             }
         },
         SubCommand::Get(matches) => {
-            let longterm_pk = load_pubkey(config.pub_key()).unwrap();
+            let longterm_pk = load_pubkey(config.pub_key())?;
 
             let pointer = storage.resolve_pointer(matches.block).expect("failed to resolve pointer");
             let block = storage.get(&pointer).expect("failed to load block");
@@ -104,35 +108,37 @@ fn main() {
             } else if matches.parent {
                 println!("{:x}", block.prev());
             } else if let Some(bytes) = block.msg() {
-                print!("{}", str::from_utf8(bytes).unwrap());
+                let mut stdout = io::stdout();
+                stdout.write(&bytes)?;
             }
         },
 
         SubCommand::Head => {
-            let head = storage.get_head().unwrap();
+            let head = storage.get_head()?;
             // XXX: verify signature before printing this?
             println!("{:x}", head);
         },
 
         SubCommand::Ls(matches) => {
-            let longterm_pk = load_pubkey(config.pub_key()).unwrap();
+            let longterm_pk = load_pubkey(config.pub_key())?;
 
             let range = storage.resolve_range(matches.spec).expect("failed to expand range");
 
-            for pointer in storage.expand_range(range).unwrap() {
-                let block = storage.get(&pointer).unwrap();
+            let mut stdout = io::stdout();
+            for pointer in storage.expand_range(range)? {
+                let block = storage.get(&pointer)?;
 
                 // TODO: verify session as well
                 block.verify_longterm(&longterm_pk).expect("verify_longterm");
 
                 if let Some(bytes) = block.msg() {
-                    print!("{}", str::from_utf8(bytes).unwrap());
+                    stdout.write(&bytes)?;
                 }
             }
         },
 
         SubCommand::Write(matches) => {
-            let client = client.connect().unwrap();
+            let client = client.connect()?;
 
             let mut pipe = InfoBlockPipe::new(client, stdin());
 
@@ -143,14 +149,14 @@ fn main() {
         },
 
         SubCommand::From(matches) => {
-            let client = client.connect().unwrap();
+            let client = client.connect()?;
 
             let size = matches.size;
 
             let prog = matches.prog;
             let args = matches.args;
 
-            // println!("executing: {:?} {:?}", prog, args);
+            info!("executing: {:?} {:?}", prog, args);
 
             let mut child = Command::new(prog)
                 .args(args)
@@ -169,16 +175,16 @@ fn main() {
         },
 
         SubCommand::Rekey => {
-            let mut client = client.connect().unwrap();
+            let mut client = client.connect()?;
 
             let block = BlockRecipe::Rekey;
-            let pointer = client.write_block(block).expect("write block");
+            let pointer = client.write_block(block)?;
             // if not quiet
             println!("{:x}", pointer);
         },
 
         SubCommand::Fsck(matches) => {
-            let longterm_pk = load_pubkey(config.pub_key()).unwrap();
+            let longterm_pk = load_pubkey(config.pub_key())?;
 
             let paranoid = matches.paranoid;
 
@@ -190,21 +196,21 @@ fn main() {
             // If this is an init block this is non-fatal in paranoid mode
             let mut first_block = true;
 
-            for pointer in storage.expand_range(range).unwrap() {
+            for pointer in storage.expand_range(range)? {
                 print!("{:x} ... ", pointer);
-                io::stdout().flush().unwrap();
+                io::stdout().flush()?;
 
-                let buf = storage.get_bytes(&pointer).unwrap();
+                let buf = storage.get_bytes(&pointer)?;
 
                 // TODO: do a 2-stage decode to avoid reencoding for verification
 
                 if let IResult::Done(_, block) = wire::block(&buf) {
-                    block.verify_longterm(&longterm_pk).expect("verify_longterm");
+                    block.verify_longterm(&longterm_pk)?;
 
                     match *block.inner() {
                         InnerBlock::Init(ref init) => {
                             print!("{}  ... ", "init".yellow());
-                            io::stdout().flush().unwrap();
+                            io::stdout().flush()?;
 
                             if paranoid && !first_block {
                                 panic!("2nd init block is not allowed in paranoid mode");
@@ -215,32 +221,32 @@ fn main() {
                         },
                         InnerBlock::Rekey(ref rekey) => {
                             print!("rekey ... ");
-                            io::stdout().flush().unwrap();
+                            io::stdout().flush()?;
 
-                            rekey.verify_session(&session.unwrap()).expect("verify_session");
+                            rekey.verify_session(&session.unwrap())?;
 
                             session = Some(rekey.pubkey().clone());
                             // println!("rekey: {:?}", session);
                         },
                         InnerBlock::Alert(ref alert) => {
                             print!("alert ... ");
-                            io::stdout().flush().unwrap();
+                            io::stdout().flush()?;
 
-                            alert.verify_session(&session.unwrap()).expect("verify_session");
+                            alert.verify_session(&session.unwrap())?;
 
                             session = Some(alert.pubkey().clone());
                             // println!("alert: {:?}", session);
                         },
                         InnerBlock::Info(ref info) => {
                             print!("info  ... ");
-                            io::stdout().flush().unwrap();
+                            io::stdout().flush()?;
 
-                            info.verify_session(&session.unwrap()).expect("verify_session");
+                            info.verify_session(&session.unwrap())?;
                             // println!("info");
                         },
                     };
                 } else {
-                    panic!("corrupted entry");
+                    return Err(format!("corrupted entry: {:?}", buf).into());
                 }
 
                 println!("{}", "ok".green());
@@ -249,21 +255,29 @@ fn main() {
         },
 
         SubCommand::Ping(matches) => {
-            let mut client = client.connect().unwrap();
+            let mut client = client.connect()?;
 
             let req = CtlRequest::Ping;
-            match client.send(&req) {
-                Ok(_) if matches.quiet => (),
-                Ok(_) => println!("pong"),
-                Err(err) => {
-                    eprintln!("{:?}", err);
-                    process::exit(1);
-                },
+            client.send(&req)?;
+
+            if !matches.quiet {
+                println!("pong");
             }
         },
 
         SubCommand::BashCompletion => {
             cli::gen_completions::<cli::tr1pctl::Args>("tr1pctl");
         }
+    }
+
+    Ok(())
+}
+
+fn main() {
+    if let Err(ref e) = run() {
+        use error_chain::ChainedError; // trait which holds `display_chain`
+
+        eprintln!("{}", e.display_chain());
+        ::std::process::exit(1);
     }
 }
