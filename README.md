@@ -67,6 +67,16 @@ simply write:
 
     tail -f /var/log/auth.log | tr1pctl write
 
+## Benchmark
+
+While this is not a common usecase, tr1pd is fast enough for Ultra HD video,
+according to [netflix][1]. This means that you can write >= 25 Megabits per
+second. Make sure you're compiling both tr1pctl and tr1pd with `--release`.
+
+    dd if=/dev/zero | pv | cargo run --release --bin tr1pctl -- write -s 65535
+
+[1]: https://help.netflix.com/en/node/306
+
 ## The program says block a lot, is this a blockchain?
 
 [No][not a blockchain]. tr1pd uses merkle tree like constructs that are

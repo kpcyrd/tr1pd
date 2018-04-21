@@ -1,33 +1,44 @@
 use zmq;
-use serde_json;
 
-use std::str;
 use std::fs::{self, Permissions};
 use std::os::unix::fs::PermissionsExt;
 
 use blocks::BlockPointer;
 use recipe::BlockRecipe;
 
+#[allow(unused_variables)]
+mod wire;
+
 mod errors {
-    use std::io;
-    use std::str;
-    use serde_json;
+    use std;
     use zmq;
 
     use rpc::CtlResponse;
 
     error_chain! {
         errors {
-            InvalidResponse(reply: CtlResponse) {
+            InvalidRecipe(recipe: Vec<u8>) {
+                description("invalid recipe")
+                display("invalid recipe: {:?}", recipe)
+            }
+            InvalidRequest(req: Vec<u8>) {
+                description("invalid request")
+                display("invalid request: {:?}", req)
+            }
+            InvalidResponse(resp: Vec<u8>) {
                 description("invalid response")
-                display("invalid response: {:?}", reply)
+                display("invalid response: {:?}", resp)
+
+            }
+
+            UnexpectedResponse(reply: CtlResponse) {
+                description("unexpected response")
+                display("unexpected response: {:?}", reply)
             }
         }
 
         foreign_links {
-            Io(io::Error);
-            Json(serde_json::Error);
-            Utf8(str::Utf8Error);
+            Io(std::io::Error);
             Zmq(zmq::Error);
         }
     }
@@ -75,18 +86,21 @@ impl Server {
     }
 
     pub fn recv(&mut self) -> Result<CtlRequest> {
-        let req = self.socket.recv_msg(0)?;
-        debug!("ctl(req, raw): {:?}", req);
-        let string = str::from_utf8(&req)?;
-        let request = serde_json::from_str(string)?;
+        let bytes = self.socket.recv_msg(0)?;
+        debug!("ctl(req, raw): {:?}", bytes);
+
+        let request = CtlRequest::decode(&bytes)?;
         debug!("ctl(req): {:?}", request);
         Ok(request)
     }
 
     pub fn reply(&mut self, reply: CtlResponse) -> Result<()> {
         debug!("ctl(resp): {:?}", reply);
-        let response = serde_json::to_string(&reply)?;
-        self.socket.send(response.as_bytes(), 0)?;
+
+        let mut bytes = Vec::new();
+        reply.encode(&mut bytes);
+        self.socket.send(&bytes, 0)?;
+
         Ok(())
     }
 }
@@ -124,12 +138,13 @@ pub struct Client {
 impl Client {
     pub fn send(&mut self, req: &CtlRequest) -> Result<CtlResponse> {
         debug!("ctl(req): {:?}", req);
-        let request = serde_json::to_string(req)?;
-        self.socket.send(request.as_bytes(), 0)?;
-        let buffer = self.socket.recv_msg(0)?;
 
-        let string = str::from_utf8(&buffer)?;
-        let reply = serde_json::from_str(&string)?;
+        let mut bytes = Vec::new();
+        req.encode(&mut bytes);
+        self.socket.send(&bytes, 0)?;
+
+        let bytes = self.socket.recv_msg(0)?;
+        let reply = CtlResponse::decode(&bytes)?;
         debug!("ctl(reply): {:?}", reply);
 
         Ok(reply)
@@ -141,7 +156,7 @@ impl Client {
 
         match reply {
             CtlResponse::Ack(pointer) => Ok(pointer),
-            _ => Err(ErrorKind::InvalidResponse(reply).into()),
+            _ => Err(ErrorKind::UnexpectedResponse(reply).into()),
         }
     }
 }

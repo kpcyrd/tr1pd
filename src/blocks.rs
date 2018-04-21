@@ -67,6 +67,11 @@ impl BlockPointer {
     }
 
     #[inline]
+    pub fn bytes(&self) -> &[u8] {
+        &self.0
+    }
+
+    #[inline]
     pub fn empty() -> BlockPointer {
         BlockPointer([0; 32])
     }
