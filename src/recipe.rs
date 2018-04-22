@@ -20,12 +20,15 @@ impl BlockRecipe {
 }
 
 
-pub fn parse_size(size: &str) -> Result<usize, ()> {
+pub fn parse_size(size: &str) -> Result<usize, String> {
 
     // TODO: this is a very strict parser, eg "512k" is invalid "512 KiB" isn't
     let mut size = match size.parse::<Size>() {
         Ok(size) => size.into_bytes() as usize,
-        Err(_) => size.parse().expect("invalid size"),
+        Err(_) => match size.parse() {
+            Ok(size) => size,
+            Err(_) => return Err("failed to parse size".to_string()),
+        },
     };
 
     if size >= 65536 {

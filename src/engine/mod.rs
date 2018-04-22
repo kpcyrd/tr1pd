@@ -34,12 +34,7 @@ impl Engine {
             },
             Err(_) => {
                 // genesis block
-                BlockPointer::from_slice(&[
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                ]).unwrap()
+                BlockPointer::empty()
             },
         };
 

@@ -1,108 +1,156 @@
-use clap::{App, SubCommand, Arg, AppSettings};
+use structopt::StructOpt;
+use structopt::clap::AppSettings;
 
-use cli::common;
+use recipe;
+use spec::{Spec, SpecPointer};
 
-#[inline]
-pub fn build_cli() -> App<'static, 'static> {
-    App::new("tr1pctl")
-        .settings(&[AppSettings::SubcommandRequiredElseHelp, AppSettings::ColoredHelp])
-        .setting(AppSettings::VersionlessSubcommands)
-        .version(env!("CARGO_PKG_VERSION"))
-        .arg(common::socket())
-        .arg(common::data_dir())
-        .subcommand(SubCommand::with_name("init")
-            .setting(AppSettings::ColoredHelp)
-            .about("Generate the long-term keypair")
-            .arg(Arg::with_name("force")
-                .help("Overwrite existing keypair")
-                .long("force")
-            )
-        )
-        .subcommand(SubCommand::with_name("get")
-            .setting(AppSettings::ColoredHelp)
-            .about("Read block")
-            .arg(Arg::with_name("all")
-                .short("a")
-                .long("all")
-            )
-            .arg(Arg::with_name("parent")
-                .short("p")
-                .long("parent")
-            )
-            .arg(Arg::with_name("block")
-                .required(true)
-            )
-        )
-        .subcommand(SubCommand::with_name("head")
-            .setting(AppSettings::ColoredHelp)
-            .about("Show the current head of the chain")
-        )
-        .subcommand(SubCommand::with_name("ls")
-            .setting(AppSettings::ColoredHelp)
-            .about("List blocks")
-            .arg(Arg::with_name("spec")
-                .help("Specify range to verify (default: all)")
-            )
-        )
-        .subcommand(SubCommand::with_name("write")
-            .setting(AppSettings::ColoredHelp)
-            .about("Write to the ledger")
-            .arg(Arg::with_name("size")
-                .help("Use buffer size instead of lines")
-                .short("s")
-                .long("size")
-                .takes_value(true)
-            )
-        )
-        .subcommand(SubCommand::with_name("from")
-            .setting(AppSettings::ColoredHelp)
-            .about("Write command output to ledger")
-            .arg(Arg::with_name("size")
-                .help("Use buffer size instead of lines")
-                .short("s")
-                .long("size")
-                .takes_value(true)
-            )
-            .arg(Arg::with_name("cmd")
-                .help("Command to execute")
-                .required(true)
-                .multiple(true)
-            )
-        )
-        .subcommand(SubCommand::with_name("rekey")
-            .setting(AppSettings::ColoredHelp)
-            .about("Explicitly write a rekey block")
-        )
-        .subcommand(SubCommand::with_name("fsck")
-            .setting(AppSettings::ColoredHelp)
-            .about("Verify ledger")
-            .arg(Arg::with_name("spec")
-                .help("Specify range to verify (default: all)")
-            )
-            .arg(Arg::with_name("verbose")
-                .help("Verbose output")
-                .short("v")
-            )
-            .arg(Arg::with_name("quiet")
-                .help("Quiet output")
-                .short("q")
-            )
-            .arg(Arg::with_name("paranoid")
-                .help("Consider 2nd init block within range fatal")
-                .short("p")
-                .long("paranoid")
-            )
-        )
-        .subcommand(SubCommand::with_name("ping")
-            .setting(AppSettings::ColoredHelp)
-            .about("Ping the daemon process")
-            .arg(Arg::with_name("quiet")
-                .help("Quiet ping")
-                .short("q")
-            )
-        )
-        .subcommand(SubCommand::with_name("bash-completion")
-            .about("Generate bash completion script for the tr1pctl command.")
-        )
+
+#[derive(StructOpt, Debug)]
+#[structopt(author = "",
+            raw(global_settings = "&[AppSettings::ColoredHelp, AppSettings::VersionlessSubcommands]"))]
+pub struct Args {
+    #[structopt(short = "S",
+                long = "socket",
+                env = "TR1PD_SOCKET")]
+    pub socket: Option<String>,
+    #[structopt(short = "D",
+                long = "data-dir",
+                env = "TR1PD_DATADIR")]
+    pub data_dir: Option<String>,
+    #[structopt(subcommand)]
+    pub subcommand: SubCommand,
 }
 
+impl Args {
+    pub fn subcommand_is_from(&self) -> bool {
+        match self.subcommand {
+            SubCommand::From(_) => true,
+            _ => false
+        }
+    }
+}
+
+#[derive(StructOpt, Debug)]
+pub enum SubCommand {
+    #[structopt(author = "",
+                name = "init",
+                about = "Generate the long-term keypair")]
+    Init(InitCmd),
+    #[structopt(author = "",
+                name = "get",
+                about = "Read block")]
+    Get(GetCmd),
+    #[structopt(author = "",
+                name = "head",
+                about = "Show the current head of the chain")]
+    Head,
+    #[structopt(author = "",
+                name = "ls",
+                about = "List blocks")]
+    Ls(LsCmd),
+    #[structopt(author = "",
+                name = "write",
+                about = "Write to the ledger")]
+    Write(WriteCmd),
+    #[structopt(author = "",
+                name = "from",
+                about = "Write command output to ledger")]
+    From(FromCmd),
+    #[structopt(author = "",
+                name = "rekey",
+                about = "Explicitly write a rekey block")]
+    Rekey,
+    #[structopt(author = "",
+                name = "fsck",
+                about = "Verify ledger")]
+    Fsck(FsckCmd),
+    #[structopt(author = "",
+                name = "ping",
+                about = "Ping the daemon process")]
+    Ping(PingCmd),
+    #[structopt(author = "",
+                name = "bash-completion",
+                about = "Generate bash completion script for the tr1pd command.")]
+    BashCompletion,
+}
+
+#[derive(StructOpt, Debug)]
+pub struct InitCmd {
+    #[structopt(long = "force",
+                help = "Overwrite existing keypair")]
+    pub force: bool,
+}
+
+#[derive(StructOpt, Debug)]
+pub struct GetCmd {
+    #[structopt(short = "a",
+                long = "all",
+                help = "Print all fields of the block")]
+    pub all: bool,
+    #[structopt(short = "p",
+                long = "parent",
+                help = "Print the pointer to the parent")]
+    pub parent: bool,
+    #[structopt(parse(try_from_str = "SpecPointer::parse"),
+                help = "The block to select")]
+    pub block: SpecPointer,
+}
+
+#[derive(StructOpt, Debug)]
+pub struct LsCmd {
+    #[structopt(default_value = "..",
+                parse(try_from_str = "Spec::parse_range"),
+                help = "Specify range to verify")]
+    pub spec: (SpecPointer, SpecPointer),
+}
+
+#[derive(StructOpt, Debug)]
+pub struct WriteCmd {
+    #[structopt(short = "s",
+                long = "size",
+                parse(try_from_str = "recipe::parse_size"),
+                help = "Use buffer size instead of lines")]
+    pub size: Option<usize>,
+}
+
+#[derive(StructOpt, Debug)]
+pub struct FromCmd {
+    #[structopt(short = "s",
+                long = "size",
+                parse(try_from_str = "recipe::parse_size"),
+                help = "Use buffer size instead of lines")]
+    pub size: Option<usize>,
+    #[structopt(help = "Program to execute")]
+    pub prog: String,
+    #[structopt(help = "Program arguments")]
+    pub args: Vec<String>,
+}
+
+#[derive(StructOpt, Debug)]
+pub struct FsckCmd {
+    #[structopt(default_value = "..",
+                parse(try_from_str = "Spec::parse_range"),
+                help = "Specify range to verify")]
+    pub spec: (SpecPointer, SpecPointer),
+    #[structopt(short = "v",
+                help = "Verbose output")]
+    pub verbose: bool,
+    #[structopt(short = "q",
+                help = "Quiet output")]
+    pub quiet: bool,
+    #[structopt(short = "p",
+                long = "paranoid",
+                help = "Consider 2nd init block within range fatal")]
+    pub paranoid: bool,
+}
+
+#[derive(StructOpt, Debug)]
+pub struct PingCmd {
+    #[structopt(short = "q",
+                help = "Quiet ping")]
+    pub quiet: bool,
+}
+
+pub fn parse() -> Args {
+    Args::from_args()
+}

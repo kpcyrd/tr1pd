@@ -1,4 +1,5 @@
 use blocks::BlockPointer;
+use errors::Result;
 
 
 #[derive(Debug, PartialEq)]
@@ -9,7 +10,7 @@ pub enum Spec {
 
 impl Spec {
     #[inline]
-    pub fn parse(spec: &str) -> Result<Spec, ()> {
+    pub fn parse(spec: &str) -> Result<Spec> {
         match spec.find("..") {
             Some(idx) => {
                 // TODO: this duplicates parse_range
@@ -26,14 +27,14 @@ impl Spec {
     }
 
     #[inline]
-    pub fn parse_range(spec: &str) -> Result<(SpecPointer, SpecPointer), ()> {
+    pub fn parse_range(spec: &str) -> Result<(SpecPointer, SpecPointer)> {
         if let Some(idx) = spec.find("..") {
             let (a, b) = spec.split_at(idx);
             let a = SpecPointer::parse_internal(a, true)?;
             let b = SpecPointer::parse_internal(&b[2..], false)?;
             Ok((a, b))
         } else {
-            panic!("TODO: invalid range");
+            Err("invalid range string".into())
         }
     }
 
@@ -65,11 +66,11 @@ pub enum SpecPointer {
 
 impl SpecPointer {
     #[inline]
-    pub fn parse(spec: &str) -> Result<SpecPointer, ()> {
+    pub fn parse(spec: &str) -> Result<SpecPointer> {
         Self::parse_internal(spec, false)
     }
 
-    pub fn parse_internal(spec: &str, empty_is_tail: bool) -> Result<SpecPointer, ()> {
+    pub fn parse_internal(spec: &str, empty_is_tail: bool) -> Result<SpecPointer> {
         if spec.ends_with("^") {
             let mut i = 0;
             let len = spec.len();
@@ -104,7 +105,7 @@ impl SpecPointer {
             }
         }
 
-        let block = BlockPointer::from_hex(spec).unwrap();
+        let block = BlockPointer::from_hex(spec)?;
         Ok(SpecPointer::Block(block))
     }
 }

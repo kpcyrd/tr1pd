@@ -2,7 +2,7 @@
 
 extern crate sodiumoxide;
 extern crate sha3;
-extern crate clap;
+#[macro_use] extern crate structopt;
 extern crate zmq;
 extern crate toml;
 extern crate human_size;
@@ -28,11 +28,18 @@ mod errors {
     error_chain! {
         links {
             Blocks(::blocks::Error, ::blocks::ErrorKind);
+            Crypto(::crypto::Error, ::crypto::ErrorKind);
+            Engine(::engine::Error, ::engine::ErrorKind);
+            Sandbox(::sandbox::Error, ::sandbox::ErrorKind);
             Storage(::storage::Error, ::storage::ErrorKind);
+            Rpc(::rpc::Error, ::rpc::ErrorKind);
+        }
+        foreign_links {
+            Io(::std::io::Error);
         }
     }
 }
-pub use self::errors::{Result, Error, ErrorKind};
+pub use self::errors::{Result, ResultExt, Error, ErrorKind};
 
 pub mod blocks;
 pub mod cli;

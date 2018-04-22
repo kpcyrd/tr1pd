@@ -102,6 +102,10 @@ impl BlockPointer {
     pub fn from_hex(mut hex: &str) -> Result<BlockPointer> {
         use std::result;
 
+        if hex.len() != 64 {
+            return Err(format!("BlockPointer has incorrect length: {}/64", hex.len()).into());
+        }
+
         let result: result::Result<Vec<u8>, _> = (0..32)
             .map(|_| {
                 let (chunk, remain) = hex.split_at(2);
