@@ -42,7 +42,7 @@ impl DiskStorage {
     }
 
     #[inline]
-    pub fn to_engine(self) -> StorageEngine {
+    pub fn into_engine(self) -> StorageEngine {
         StorageEngine::Disk(self)
     }
 }
@@ -111,7 +111,7 @@ impl BlockStorage for DiskStorage {
         dest.push("HEAD");
 
         // TODO: atomic replace
-        if let Ok(_) = fs::symlink_metadata(&dest) {
+        if fs::symlink_metadata(&dest).is_ok() {
             fs::remove_file(&dest)?;
         }
 

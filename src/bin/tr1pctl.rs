@@ -1,4 +1,6 @@
 #![warn(unused_extern_crates)]
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
 
 extern crate tr1pd;
 extern crate env_logger;
@@ -58,10 +60,10 @@ fn run() -> Result<()> {
 
     let config = config::load_config();
 
-    let path = args.data_dir.unwrap_or(config.datadir().to_string());
+    let path = args.data_dir.unwrap_or_else(|| config.datadir().to_string());
     let storage = DiskStorage::new(path);
 
-    let socket = args.socket.unwrap_or(config.socket().to_string());
+    let socket = args.socket.unwrap_or_else(|| config.socket().to_string());
     let client = ClientBuilder::new(socket);
 
     use cli::tr1pctl::SubCommand;
@@ -109,7 +111,7 @@ fn run() -> Result<()> {
                 println!("{:x}", block.prev());
             } else if let Some(bytes) = block.msg() {
                 let mut stdout = io::stdout();
-                stdout.write(&bytes)?;
+                stdout.write_all(&bytes)?;
             }
         },
 
@@ -132,7 +134,7 @@ fn run() -> Result<()> {
                 block.verify_longterm(&longterm_pk).expect("verify_longterm");
 
                 if let Some(bytes) = block.msg() {
-                    stdout.write(&bytes)?;
+                    stdout.write_all(&bytes)?;
                 }
             }
         },
@@ -216,7 +218,7 @@ fn run() -> Result<()> {
                                 panic!("2nd init block is not allowed in paranoid mode");
                             }
 
-                            session = Some(init.pubkey().clone());
+                            session = Some(*init.pubkey());
                             // println!("ALERT: init: {:?}", session);
                         },
                         InnerBlock::Rekey(ref rekey) => {
@@ -225,7 +227,7 @@ fn run() -> Result<()> {
 
                             rekey.verify_session(&session.unwrap())?;
 
-                            session = Some(rekey.pubkey().clone());
+                            session = Some(*rekey.pubkey());
                             // println!("rekey: {:?}", session);
                         },
                         InnerBlock::Alert(ref alert) => {
@@ -234,7 +236,7 @@ fn run() -> Result<()> {
 
                             alert.verify_session(&session.unwrap())?;
 
-                            session = Some(alert.pubkey().clone());
+                            session = Some(*alert.pubkey());
                             // println!("alert: {:?}", session);
                         },
                         InnerBlock::Info(ref info) => {

@@ -3,6 +3,7 @@ use blocks::BlockPointer;
 
 use std::collections::BTreeMap;
 
+#[derive(Default)]
 pub struct MemoryStorage {
     blocks: BTreeMap<BlockPointer, Vec<u8>>,
     head: BlockPointer,
@@ -10,14 +11,11 @@ pub struct MemoryStorage {
 
 impl MemoryStorage {
     pub fn new() -> MemoryStorage {
-        MemoryStorage {
-            blocks: BTreeMap::new(),
-            head: BlockPointer::empty(),
-        }
+        MemoryStorage::default()
     }
 
     #[inline]
-    pub fn to_engine(self) -> StorageEngine {
+    pub fn into_engine(self) -> StorageEngine {
         StorageEngine::Memory(self)
     }
 }

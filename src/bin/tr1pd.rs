@@ -1,4 +1,6 @@
 #![warn(unused_extern_crates)]
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
 
 extern crate tr1pd;
 extern crate env_logger;
@@ -46,12 +48,9 @@ fn run() -> Result<()> {
 
     let args = cli::tr1pd::parse();
 
-    match args.subcommand {
-        Some(cli::tr1pd::SubCommand::BashCompletion) => {
-            cli::gen_completions::<cli::tr1pd::Args>("tr1pd");
-            return Ok(());
-        }
-        _ => (),
+    if let Some(cli::tr1pd::SubCommand::BashCompletion) = args.subcommand {
+        cli::gen_completions::<cli::tr1pd::Args>("tr1pd");
+        return Ok(());
     }
 
     let mut config = config::load_config();
@@ -67,7 +66,7 @@ fn run() -> Result<()> {
         .chain_err(|| "sandbox stage2")?;
 
     let ring = SignRing::new(pk, sk);
-    let storage = DiskStorage::new(config.datadir()).to_engine();
+    let storage = DiskStorage::new(config.datadir()).into_engine();
     let mut engine = Engine::start(storage, ring)?;
 
     loop {
@@ -84,7 +83,7 @@ fn run() -> Result<()> {
             },
         };
 
-        server.reply(reply)?;
+        server.reply(&reply)?;
     }
 }
 

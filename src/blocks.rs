@@ -52,7 +52,7 @@ pub fn validate_block_size(len: usize) -> Result<()> {
 /// Pointer to a [`Block`]
 ///
 /// [`Block`]: struct.Block.html
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BlockPointer(pub [u8; 32]);
 
 impl BlockPointer {
@@ -135,7 +135,7 @@ impl From<Option<[u8; 32]>> for BlockPointer {
 
 impl fmt::LowerHex for BlockPointer {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for x in self.0.iter() {
+        for x in &self.0 {
             write!(f, "{:02x}", x)?
         }
         Ok(())
@@ -154,8 +154,8 @@ impl Block {
     #[inline]
     pub fn new(inner: InnerBlock, signature: Signature) -> Block {
         Block {
-            inner: inner,
-            signature: signature,
+            inner,
+            signature,
         }
     }
 
@@ -298,6 +298,7 @@ pub enum BlockIdentifier {
 }
 
 impl BlockIdentifier {
+    /*
     pub fn to_block_identifier(x: u8) -> Result<BlockIdentifier> {
         match x {
             0x00 => Ok(BlockIdentifier::Init),
@@ -307,6 +308,7 @@ impl BlockIdentifier {
             _ => Err(ErrorKind::InvalidBlockIdentifier(x).into()),
         }
     }
+    */
 
     pub fn to_byte(&self) -> u8 {
         match *self {
