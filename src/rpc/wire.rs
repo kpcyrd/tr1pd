@@ -41,7 +41,7 @@ fn recipe(input: &[u8]) -> IResult<&[u8], BlockRecipe> {
     do_parse!(input,
         recipe: switch!(be_u8,
             0x00 => value!(BlockRecipe::Rekey) |
-            0x01 => map!(recipe_info, |x| BlockRecipe::Info(x))
+            0x01 => map!(recipe_info, BlockRecipe::Info)
         ) >>
         (recipe)
     )
@@ -72,7 +72,7 @@ fn request(input: &[u8]) -> IResult<&[u8], CtlRequest> {
     do_parse!(input,
         request: switch!(be_u8,
             0x00 => value!(CtlRequest::Ping) |
-            0x01 => map!(recipe, |x| CtlRequest::Write(x))
+            0x01 => map!(recipe, CtlRequest::Write)
         ) >>
         (request)
     )
@@ -104,7 +104,7 @@ fn response(input: &[u8]) -> IResult<&[u8], CtlResponse> {
     do_parse!(input,
         response: switch!(be_u8,
             0x00 => value!(CtlResponse::Pong) |
-            0x01 => map!(pointer, |x| CtlResponse::Ack(x)) |
+            0x01 => map!(pointer, CtlResponse::Ack) |
             0x02 => value!(CtlResponse::Nack)
         ) >>
         (response)

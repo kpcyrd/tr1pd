@@ -94,7 +94,7 @@ impl Server {
         Ok(request)
     }
 
-    pub fn reply(&mut self, reply: CtlResponse) -> Result<()> {
+    pub fn reply(&mut self, reply: &CtlResponse) -> Result<()> {
         debug!("ctl(resp): {:?}", reply);
 
         let mut bytes = Vec::new();

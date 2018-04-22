@@ -71,12 +71,12 @@ impl SpecPointer {
     }
 
     pub fn parse_internal(spec: &str, empty_is_tail: bool) -> Result<SpecPointer> {
-        if spec.ends_with("^") {
+        if spec.ends_with('^') {
             let mut i = 0;
             let len = spec.len();
 
-            for b in spec.as_bytes().iter().rev() {
-                if *b != '^' as u8 {
+            for b in spec.chars().rev() {
+                if b != '^' {
                     break;
                 }
                 i += 1;
@@ -86,7 +86,7 @@ impl SpecPointer {
             return Ok(SpecPointer::Parent((Box::new(next), i as u64)));
         }
 
-        if spec.starts_with("@") {
+        if spec.starts_with('@') {
             let next = SpecPointer::parse(&spec[1..])?;
             return Ok(SpecPointer::Session(Box::new(next)));
         }

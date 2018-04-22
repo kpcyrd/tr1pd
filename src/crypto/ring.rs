@@ -146,7 +146,7 @@ impl SignRing {
 
     pub fn init(&mut self) -> PublicKey {
         let (pk, sk) = crypto::gen_keypair();
-        self.session_pk = Some(pk.clone());
+        self.session_pk = Some(pk);
         self.session_sk = Some(sk);
         pk
     }
@@ -155,7 +155,7 @@ impl SignRing {
         let (pk, sk) = crypto::gen_keypair();
 
         // old key is still active to sign off the current block
-        self.delayed_keypair = Some((pk.clone(), sk));
+        self.delayed_keypair = Some((pk, sk));
 
         pk
     }
@@ -191,10 +191,9 @@ impl SignRing {
 
         match self.delayed_keypair.take() {
             Some((pk, sk)) => {
-                match self.session_sk {
-                    Some(ref mut sk) => SignRing::memzero(&mut sk.0),
-                    _ => (),
-                };
+                if let Some(ref mut sk) = self.session_sk {
+                    SignRing::memzero(&mut sk.0);
+                }
 
                 self.session_pk = Some(pk);
                 self.session_sk = Some(sk);

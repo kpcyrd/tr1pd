@@ -36,8 +36,8 @@ pub fn len_to_u16_vec(i: usize) -> Result<[u8; 2]> {
     }
 
     let length = i as u16;
-    let msb = ((length & 0b1111111100000000) >> 8) as u8;
-    let lsb = (length & 0b11111111) as u8;
+    let msb = ((length & 0b1111_1111_0000_0000) >> 8) as u8;
+    let lsb = (length & 0b1111_1111) as u8;
 
     let mut bytes = [0; 2];
     bytes[0] = msb;

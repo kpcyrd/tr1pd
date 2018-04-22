@@ -47,7 +47,7 @@ fn test_spec_get_parent() {
 
     let (pk, sk) = crypto::gen_keypair();
     let ring = SignRing::new(pk, sk);
-    let storage = MemoryStorage::new().to_engine();
+    let storage = MemoryStorage::new().into_engine();
     let mut engine = Engine::start(storage, ring).unwrap();
     let init = engine.storage().get_head().unwrap();
     engine.rekey().unwrap();
@@ -67,7 +67,7 @@ fn test_spec_get_session() {
 
     let (pk, sk) = crypto::gen_keypair();
     let ring = SignRing::new(pk, sk);
-    let storage = MemoryStorage::new().to_engine();
+    let storage = MemoryStorage::new().into_engine();
     let mut engine = Engine::start(storage, ring).unwrap();
     let init = engine.storage().get_head().unwrap();
     engine.rekey().unwrap();
@@ -88,7 +88,7 @@ fn test_spec_get_parent_session() {
 
     let (pk, sk) = crypto::gen_keypair();
     let ring = SignRing::new(pk, sk);
-    let storage = MemoryStorage::new().to_engine();
+    let storage = MemoryStorage::new().into_engine();
 
     let mut engine = Engine::start(storage, ring).unwrap();
     engine.rekey().unwrap();
@@ -112,7 +112,7 @@ fn test_spec_expand_range() {
 
     let (pk, sk) = crypto::gen_keypair();
     let ring = SignRing::new(pk, sk);
-    let storage = MemoryStorage::new().to_engine();
+    let storage = MemoryStorage::new().into_engine();
 
     let mut pointers = Vec::new();
 
@@ -141,7 +141,7 @@ fn test_spec_range_genesis_to_head() {
 
     let (pk, sk) = crypto::gen_keypair();
     let ring = SignRing::new(pk, sk);
-    let storage = MemoryStorage::new().to_engine();
+    let storage = MemoryStorage::new().into_engine();
 
     let mut pointers = Vec::new();
     let mut engine = Engine::start(storage, ring).unwrap();

@@ -450,7 +450,7 @@ use storage::{MemoryStorage, BlockStorage};
 fn test_small_block() {
     let (pk, sk) = crypto::gen_keypair();
     let ring = SignRing::new(pk, sk);
-    let storage = MemoryStorage::new().to_engine();
+    let storage = MemoryStorage::new().into_engine();
     let mut engine = Engine::start(storage, ring).unwrap();
 
     let written = engine.info([0; 25].to_vec()).unwrap(); // 25B
@@ -465,7 +465,7 @@ fn test_small_block() {
 fn test_large_block() {
     let (pk, sk) = crypto::gen_keypair();
     let ring = SignRing::new(pk, sk);
-    let storage = MemoryStorage::new().to_engine();
+    let storage = MemoryStorage::new().into_engine();
     let mut engine = Engine::start(storage, ring).unwrap();
 
     let written = engine.info([0; 65535].to_vec()).unwrap(); // 65KiB, max block size
@@ -480,7 +480,7 @@ fn test_large_block() {
 fn test_too_large_block() {
     let (pk, sk) = crypto::gen_keypair();
     let ring = SignRing::new(pk, sk);
-    let storage = MemoryStorage::new().to_engine();
+    let storage = MemoryStorage::new().into_engine();
     let mut engine = Engine::start(storage, ring).unwrap();
 
     let err = engine.info([0; 1024*70].to_vec()).err().unwrap(); // 70KiB
