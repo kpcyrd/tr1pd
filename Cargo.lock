@@ -1004,6 +1004,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "syscallz"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "error-chain 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "seccomp-sys 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "take"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1232,12 +1243,12 @@ dependencies = [
  "nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pledge 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pseudo 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "seccomp-sys 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha3 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "sodiumoxide 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syscallz 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "users 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "zmq 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1540,6 +1551,7 @@ dependencies = [
 "checksum structopt 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)" = "1dbf9b178b64479997d9515aa4a6956ada20a9829fa03fee3bbcff5962e4e405"
 "checksum structopt-derive 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)" = "29040b33bfc5dae3a321f79cbcd86813a5f024e3040a31f057188e7f2b6228ba"
 "checksum syn 0.13.1 (registry+https://github.com/rust-lang/crates.io-index)" = "91b52877572087400e83d24b9178488541e3d535259e04ff17a63df1e5ceff59"
+"checksum syscallz 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "452f5151cd989c00367e90d4cf1bf980ab408b7b31046e404318752852f2708c"
 "checksum take 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b157868d8ac1f56b64604539990685fa7611d8fa9e5476cf0c02cf34d32917c5"
 "checksum termcolor 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)" = "adc4587ead41bf016f11af03e55a624c06568b5a19db4e90fde573d805074f83"
 "checksum termion 1.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "689a3bdfaab439fd92bc87df5c4c78417d3cbe537487274e9b0b2dce76e92096"

@@ -12,7 +12,7 @@ extern crate libc;
 #[cfg(not(target_os="linux"))]
 extern crate users;
 #[cfg(target_os="linux")]
-extern crate seccomp_sys;
+extern crate syscallz;
 #[cfg(target_os="linux")]
 extern crate caps;
 #[cfg(target_os="openbsd")]

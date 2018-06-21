@@ -7,14 +7,14 @@ mod errors {
     #[cfg(target_os="openbsd")]
     use sandbox::pledge;
     #[cfg(target_os="linux")]
-    use sandbox::seccomp;
+    use syscallz;
 
     error_chain! {
         links {
             Capabilities(capabilities::Error, capabilities::ErrorKind)  #[cfg(target_os="linux")];
             Chroot(chroot::Error, chroot::ErrorKind);
             Pledge(pledge::Error, pledge::ErrorKind) #[cfg(target_os="openbsd")];
-            Seccomp(seccomp::Error, seccomp::ErrorKind) #[cfg(target_os="linux")];
+            Seccomp(syscallz::Error, syscallz::ErrorKind) #[cfg(target_os="linux")];
         }
     }
 }
@@ -27,8 +27,6 @@ pub mod chroot;
 pub mod pledge;
 #[cfg(target_os="linux")]
 pub mod seccomp;
-#[cfg(target_os="linux")]
-pub mod syscalls;
 
 
 pub fn activate_stage1() -> Result<()> {
