@@ -33,7 +33,6 @@ pub fn activate_stage1() -> Result<()> {
     ctx.allow_syscall(Syscall::symlinkat)?;
     #[cfg(not(target_arch = "aarch64"))]
     ctx.allow_syscall(Syscall::getdents)?;
-    #[cfg(target_arch = "aarch64")]
     ctx.allow_syscall(Syscall::getdents64)?;
     ctx.allow_syscall(Syscall::getpid)?;
     ctx.allow_syscall(Syscall::getuid)?;
@@ -85,6 +84,7 @@ pub fn activate_stage1() -> Result<()> {
     ctx.allow_syscall(Syscall::rt_sigprocmask)?;
     ctx.allow_syscall(Syscall::clock_gettime)?;
     ctx.allow_syscall(Syscall::gettimeofday)?;
+    ctx.allow_syscall(Syscall::restart_syscall)?;
     ctx.allow_syscall(Syscall::prctl)?; // needed for stage2
     ctx.allow_syscall(Syscall::seccomp)?; // needed for stage2
     ctx.allow_syscall(Syscall::capget)?; // needed for stage2
@@ -171,6 +171,7 @@ pub fn activate_tr1pd_stage2() -> Result<()> {
     ctx.allow_syscall(Syscall::fcntl)?;
     ctx.allow_syscall(Syscall::brk)?;
     ctx.allow_syscall(Syscall::clock_gettime)?;
+    ctx.allow_syscall(Syscall::restart_syscall)?;
     // ctx.allow_syscall(Syscall::prctl)?; // needed for stage2
     // ctx.allow_syscall(Syscall::seccomp)?; // needed for stage2
     // ctx.allow_syscall(Syscall::capget)?; // needed for stage2 TODO

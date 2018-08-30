@@ -25,7 +25,7 @@ travis-ci = { repository = "kpcyrd/tr1pd" }
 [dependencies]
 nom = "3.2"
 structopt = "0.2"
-error-chain = "0.11"
+error-chain = "0.12"
 sodiumoxide = "0.0.16"
 sha3 = "0.7"
 libc = "0.2"
@@ -42,12 +42,10 @@ serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4"
 
-clippy = { version = "*", optional = true }
-
 [target.'cfg(target_os="linux")'.dependencies]
-syscallz = "0.1"
+syscallz = "0.7"
 caps = "0.2"
 
 [dev-dependencies]
 pseudo = "0.1"
-boxxy = "0.4"
+boxxy = "0.7"

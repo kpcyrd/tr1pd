@@ -14,7 +14,9 @@ mod errors {
             Capabilities(capabilities::Error, capabilities::ErrorKind)  #[cfg(target_os="linux")];
             Chroot(chroot::Error, chroot::ErrorKind);
             Pledge(pledge::Error, pledge::ErrorKind) #[cfg(target_os="openbsd")];
-            Seccomp(syscallz::Error, syscallz::ErrorKind) #[cfg(target_os="linux")];
+        }
+        foreign_links {
+            Seccomp(syscallz::Error) #[cfg(target_os="linux")];
         }
     }
 }
